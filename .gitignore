@@ -1,0 +1,20 @@
+# Program binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/fuelbot
+
+# Local configs
+local.env.yaml
+
+# Test binaries and reports
+*.test
+*.out
+
+# JetBrains IDEs: IntelliJ, GoLand and etc
+*.iws
+.idea/
+.idea_modules/
+
