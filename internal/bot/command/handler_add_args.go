@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/model"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/util/stringutils"
@@ -13,7 +14,8 @@ type addCommandArgs struct {
 	TotalPrice float64
 }
 
-func parseAddCommandArgs(args []string, prevRefuel *model.Refuel) (*addCommandArgs, error) {
+func parseAddCommandArgs(cmdArgs string, prevRefuel *model.Refuel) (*addCommandArgs, error) {
+	args := strings.Fields(strings.TrimSpace(cmdArgs))
 	if len(args) < 3 {
 		return nil, fmt.Errorf("недостаточно параметров, укажите <пробег> <литры> <сумма чека>")
 	}

@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/util/sliceutils"
@@ -44,7 +43,7 @@ func (h *addCommand) Process(ctx context.Context, msg *telegram.Message) error {
 		}
 		prevRefuel = sliceutils.First(prevRefuels)
 
-		cmdArgs, err := parseAddCommandArgs(strings.Fields(msg.CommandArguments()), prevRefuel)
+		cmdArgs, err := parseAddCommandArgs(msg.CommandArguments(), prevRefuel)
 		if err != nil {
 			_ = h.sendMessage(msg.Chat.ID, "⚠️ Ошибка ввода: "+err.Error())
 			return nil
