@@ -12,13 +12,13 @@ import (
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/repository"
 )
 
-type startHandler struct {
-	commonHandler
+type startCommand struct {
+	commonCommand
 }
 
-func NewStartHandler(cfg *config.Config, botAPI *telegram.BotAPI, uow repository.UnitOfWork) Handler {
-	return &startHandler{
-		commonHandler: commonHandler{
+func NewStartCommand(cfg *config.Config, botAPI *telegram.BotAPI, uow repository.UnitOfWork) Handler {
+	return &startCommand{
+		commonCommand: commonCommand{
 			cfg:    cfg,
 			botAPI: botAPI,
 			uow:    uow,
@@ -26,7 +26,7 @@ func NewStartHandler(cfg *config.Config, botAPI *telegram.BotAPI, uow repository
 	}
 }
 
-func (h *startHandler) Process(ctx context.Context, msg *telegram.Message) error {
+func (h *startCommand) Process(ctx context.Context, msg *telegram.Message) error {
 	err := repository.WithTransaction(ctx, h.uow, func(ctx context.Context, tx repository.Transaction) error {
 		_, err := tx.UserRepository().Create(ctx, &model.User{
 			TelegramID: msg.From.ID,

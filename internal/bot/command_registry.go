@@ -25,8 +25,8 @@ func NewCommandRegistry(cfg *config.Config, botAPI *telegram.BotAPI) (*CommandRe
 
 	return &CommandRegistry{
 		handlersMap: map[string]command.Handler{
-			"start": command.NewStartHandler(cfg, botAPI, uow),
-			"add":   command.NewAddHandler(cfg, botAPI, uow),
+			"start": command.NewStartCommand(cfg, botAPI, uow),
+			"add":   command.NewAddCommand(cfg, botAPI, uow),
 			// "stats": nil,
 			// "import": nil,
 			// "export": nil,

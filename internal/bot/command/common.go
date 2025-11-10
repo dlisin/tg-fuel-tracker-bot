@@ -22,17 +22,17 @@ type Handler interface {
 	Process(ctx context.Context, msg *telegram.Message) error
 }
 
-type commonHandler struct {
+type commonCommand struct {
 	cfg    *config.Config
 	botAPI *telegram.BotAPI
 	uow    repository.UnitOfWork
 }
 
-func (h *commonHandler) sendHelpMessage(chatID int64) error {
+func (h *commonCommand) sendHelpMessage(chatID int64) error {
 	return h.sendMessage(chatID, helpText)
 }
 
-func (h *commonHandler) sendMessage(chatID int64, msgText string) error {
+func (h *commonCommand) sendMessage(chatID int64, msgText string) error {
 	msg := telegram.NewMessage(chatID, telegram.EscapeText(telegram.ModeMarkdown, msgText))
 	msg.ParseMode = telegram.ModeMarkdown
 

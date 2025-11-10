@@ -12,22 +12,15 @@ import (
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/model"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/repository"
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/util/stringutils"
 )
 
-type addHandler struct {
-	commonHandler
+type addCommand struct {
+	commonCommand
 }
 
-type addCommandArgs struct {
-	Odometer   int64
-	Liters     float64
-	TotalPrice float64
-}
-
-func NewAddHandler(cfg *config.Config, botAPI *telegram.BotAPI, uow repository.UnitOfWork) Handler {
-	return &addHandler{
-		commonHandler: commonHandler{
+func NewAddCommand(cfg *config.Config, botAPI *telegram.BotAPI, uow repository.UnitOfWork) Handler {
+	return &addCommand{
+		commonCommand: commonCommand{
 			cfg:    cfg,
 			botAPI: botAPI,
 			uow:    uow,
@@ -35,7 +28,7 @@ func NewAddHandler(cfg *config.Config, botAPI *telegram.BotAPI, uow repository.U
 	}
 }
 
-func (h *addHandler) Process(ctx context.Context, msg *telegram.Message) error {
+func (h *addCommand) Process(ctx context.Context, msg *telegram.Message) error {
 	var prevRefuel, newRefuel *model.Refuel
 
 	err := repository.WithTransaction(ctx, h.uow, func(ctx context.Context, tx repository.Transaction) error {
@@ -51,7 +44,7 @@ func (h *addHandler) Process(ctx context.Context, msg *telegram.Message) error {
 		}
 		prevRefuel = sliceutils.First(prevRefuels)
 
-		cmdArgs, err := h.parseCmdArgs(msg, prevRefuel)
+		cmdArgs, err := parseAddCommandArgs(strings.Fields(msg.CommandArguments()), prevRefuel)
 		if err != nil {
 			_ = h.sendMessage(msg.Chat.ID, "⚠️ Ошибка ввода: "+err.Error())
 			return nil
@@ -92,39 +85,4 @@ func (h *addHandler) Process(ctx context.Context, msg *telegram.Message) error {
 	}
 
 	return nil
-}
-
-func (h *addHandler) parseCmdArgs(msg *telegram.Message, prevRefuel *model.Refuel) (*addCommandArgs, error) {
-	args := strings.Fields(msg.CommandArguments())
-	if len(args) < 3 {
-		return nil, fmt.Errorf("недостаточно параметров, укажите <пробег> <литры> <сумма чека>")
-	}
-
-	odometer, err := stringutils.ParseInt64(args[0])
-	if err != nil || odometer < 0 {
-		return nil, fmt.Errorf("пробег должен быть целым числом ≥ 0")
-	}
-
-	liters, err := stringutils.ParseFloat64(args[1])
-	if err != nil || liters <= 0 {
-		return nil, fmt.Errorf("литры должны быть числом > 0")
-	}
-
-	totalPrice, err := stringutils.ParseFloat64(args[2])
-	if err != nil || totalPrice <= 0 {
-		return nil, fmt.Errorf("сумма чека должна быть числом > 0")
-	}
-
-	if prevRefuel != nil {
-		prevOdometer := prevRefuel.Odometer
-		if prevOdometer >= odometer {
-			return nil, fmt.Errorf("пробег должен быть больше предыдущего (%d)", prevOdometer)
-		}
-	}
-
-	return &addCommandArgs{
-		Odometer:   odometer,
-		Liters:     liters,
-		TotalPrice: totalPrice,
-	}, nil
 }
