@@ -1,4 +1,4 @@
-# Stage 1: Build the application with CGO and GCC
+# Stage 1: Build the application
 FROM golang:1.25-alpine AS build
 
 RUN apk update && \
@@ -15,7 +15,14 @@ RUN CGO_ENABLED=1 GOOS=linux go build -o fuelbot ./cmd/fuelbot
 
 # Stage 2: Create a minimal runtime image
 FROM alpine:latest
+
+RUN apk update && apk add --no-cache \
+    ca-certificates  \
+    sqlite
+
 WORKDIR /app
-VOLUME ["/var/lib/fuelbot"]
 COPY --from=build /app/fuelbot /usr/local/bin/fuelbot
+
+VOLUME ["/var/lib/fuelbot"]
+
 ENTRYPOINT ["/usr/local/bin/fuelbot"]
