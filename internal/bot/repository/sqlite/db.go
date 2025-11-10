@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/repository"
 	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
@@ -24,8 +25,8 @@ type sqliteTransaction struct {
 	tx *sqlx.Tx
 }
 
-func NewSQLiteDB(path string) (*sqlx.DB, error) {
-	db, err := sqlx.Open(driverName, path)
+func NewSQLiteDB(cfg config.DatabaseConfig) (*sqlx.DB, error) {
+	db, err := sqlx.Open(driverName, cfg.Path)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 
 	commonConfig "github.com/kittipat1413/go-common/framework/config"
 )
@@ -16,36 +17,50 @@ const (
 )
 
 type Config struct {
-	TelegramAPIToken string
-	TelegramBotDebug bool
-
-	DatabasePath string
+	TelegramBot TelegramBotConfig
+	Database    DatabaseConfig
 
 	DefaultFuelType string
 	DefaultCurrency string
 }
 
+type TelegramBotConfig struct {
+	Token string
+	Debug bool
+}
+
+type DatabaseConfig struct {
+	Path string
+}
+
 func Load() (*Config, error) {
-	cfg := commonConfig.MustConfig(
+	commonCfg := commonConfig.MustConfig(
 		commonConfig.WithOptionalConfigPaths("./local.env.yaml", "./config/env.yaml", "/etc/fuelbot/config.yaml"),
 		commonConfig.WithDefaults(map[string]any{
 			telegramBotToken: "",
 			telegramBotDebug: false,
-			databasePath:     "fuelbot.db",
-			defaultFuelType:  "DT",
+			databasePath:     "/var/lib/fuelbot/fuelbot.db",
+			defaultFuelType:  "ДТ",
 			defaultCurrency:  "₽",
 		}),
 	)
 
-	if cfg.GetString(telegramBotToken) == "" {
+	if commonCfg.GetString(telegramBotToken) == "" {
 		return nil, fmt.Errorf("%s must be set", telegramBotToken)
 	}
 
-	return &Config{
-		TelegramAPIToken: cfg.GetString(telegramBotToken),
-		TelegramBotDebug: cfg.GetBool(telegramBotDebug),
-		DatabasePath:     cfg.GetString(databasePath),
-		DefaultFuelType:  cfg.GetString(defaultFuelType),
-		DefaultCurrency:  cfg.GetString(defaultCurrency),
-	}, nil
+	cfg := &Config{
+		TelegramBot: TelegramBotConfig{
+			Token: commonCfg.GetString(telegramBotToken),
+			Debug: commonCfg.GetBool(telegramBotDebug),
+		},
+		Database: DatabaseConfig{
+			Path: commonCfg.GetString(databasePath),
+		},
+		DefaultFuelType: commonCfg.GetString(defaultFuelType),
+		DefaultCurrency: commonCfg.GetString(defaultCurrency),
+	}
+	log.Printf("Loaded configuration: %+v\n", cfg)
+
+	return cfg, nil
 }
