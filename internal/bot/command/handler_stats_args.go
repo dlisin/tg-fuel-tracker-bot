@@ -20,7 +20,7 @@ func parseStatsCommandArgs(cmdArgs string) (*statsCommandArgs, error) {
 		now := time.Now()
 
 		return &statsCommandArgs{
-			Label: "за последние месяц",
+			Label: "за последний месяц",
 			Period: &model.Range[time.Time]{
 				Start: now.AddDate(0, -1, 0),
 				End:   now,
