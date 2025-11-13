@@ -1,8 +1,10 @@
+version: '3.8'
+
 services:
   fuelbot:
     build:
       dockerfile: ./Dockerfile
     volumes:
       - ./local.env.yaml:/etc/fuelbot/config.yaml:ro
-      - /tmp/fuelbot.db:/var/lib/fuelbot/fuelbot.db:rw
+      - /tmp/fuelbot.db:/var/lib/fuelbot/fuelbot.db
     restart: unless-stopped

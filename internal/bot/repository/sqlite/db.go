@@ -61,10 +61,6 @@ func (t *sqliteTransaction) Rollback() error {
 	return t.tx.Rollback()
 }
 
-func (t *sqliteTransaction) UserRepository() repository.UserRepository {
-	return &userRepository{t.tx}
-}
-
 func (t *sqliteTransaction) RefuelRepository() repository.RefuelRepository {
 	return &refuelRepository{t.tx}
 }

@@ -26,7 +26,7 @@ func (r *refuelRepository) Create(ctx context.Context, refuel *model.Refuel) (*m
 	return refuel, nil
 }
 
-func (r *refuelRepository) List(ctx context.Context, userID model.UserID, filter repository.RefuelFilter) ([]model.Refuel, error) {
+func (r *refuelRepository) List(ctx context.Context, userID model.TelegramID, filter repository.RefuelFilter) ([]model.Refuel, error) {
 	query := "SELECT id, user_id, odometer, liters, price_per_liter, price_total, created_at FROM refuels WHERE user_id = $1"
 	queryArgs := []interface{}{userID}
 

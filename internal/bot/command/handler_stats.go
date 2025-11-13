@@ -26,11 +26,7 @@ func NewStatsCommand(cfg *config.Config, botAPI *telegram.BotAPI, uow repository
 
 func (h statsCommand) Process(ctx context.Context, msg *telegram.Message) error {
 	err := repository.WithTransaction(ctx, h.uow, func(ctx context.Context, tx repository.Transaction) error {
-		user, err := tx.UserRepository().GetByTelegramID(ctx, msg.From.ID)
-		if err != nil {
-			_ = h.sendMessage(msg.Chat.ID, "⚠️ Не удалось загрузить профиль пользователя. Зарегистрируйтесь, выполнив команду: /start")
-			return nil
-		}
+		userID := model.TelegramID(msg.From.ID)
 
 		cmdArgs, err := parseStatsCommandArgs(msg.CommandArguments())
 		if err != nil {
@@ -38,7 +34,7 @@ func (h statsCommand) Process(ctx context.Context, msg *telegram.Message) error 
 			return nil
 		}
 
-		refuels, err := tx.RefuelRepository().List(ctx, user.ID, repository.RefuelFilter{CreatedAt: cmdArgs.Period})
+		refuels, err := tx.RefuelRepository().List(ctx, userID, repository.RefuelFilter{CreatedAt: cmdArgs.Period})
 		if err != nil {
 			return err
 		}
