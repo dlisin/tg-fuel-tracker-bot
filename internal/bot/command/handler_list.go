@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/model"
@@ -10,12 +11,12 @@ import (
 	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type statsCommand struct {
+type listCommand struct {
 	commonCommand
 }
 
-func NewStatsCommand(cfg *config.Config, botAPI *telegram.BotAPI, uow repository.UnitOfWork) Handler {
-	return &statsCommand{
+func NewListCommand(cfg *config.Config, botAPI *telegram.BotAPI, uow repository.UnitOfWork) Handler {
+	return &listCommand{
 		commonCommand: commonCommand{
 			cfg:    cfg,
 			botAPI: botAPI,
@@ -24,7 +25,7 @@ func NewStatsCommand(cfg *config.Config, botAPI *telegram.BotAPI, uow repository
 	}
 }
 
-func (h statsCommand) Process(ctx context.Context, msg *telegram.Message) error {
+func (h listCommand) Process(ctx context.Context, msg *telegram.Message) error {
 	err := repository.WithTransaction(ctx, h.uow, func(ctx context.Context, tx repository.Transaction) error {
 		userID := model.TelegramID(msg.From.ID)
 
@@ -39,18 +40,22 @@ func (h statsCommand) Process(ctx context.Context, msg *telegram.Message) error 
 			return err
 		}
 
-		if len(refuels) < 2 {
-			_ = h.sendMessage(msg.Chat.ID, "ℹ️ Недостаточно данных. Нужны минимум две записи в выбранном периоде")
-			return nil
+		if len(refuels) == 0 {
+			_ = h.sendMessage(msg.Chat.ID, "ℹ️ Нет заправок в выбранном периоде. Используйте /add чтобы добавить первую")
 		}
 
-		stats := model.CreateRefuelStats(refuels)
-		_ = h.sendMessage(msg.Chat.ID,
-			fmt.Sprintf("📊 *Статистика %s:*\n\n• Пробег: %dкм\n• Средний расход: %.2fл/100км\n• Цена/л: %.2f%s → %.2f%s (%+.2f%s; %+.1f%%)",
-				cmdArgs.Label, stats.TotalDistance, stats.FuelConsumption,
-				stats.PricePerLiterFirst, h.cfg.DefaultCurrency,
-				stats.PricePerLiterLast, h.cfg.DefaultCurrency,
-				stats.PricePerLiterDeltaAbs, h.cfg.DefaultCurrency, stats.PricePerLiterDeltaPct))
+		text := fmt.Sprintf("📝 *Заправки %s:*\n\n", cmdArgs.Label)
+		for _, refuel := range refuels {
+			text += fmt.Sprintf("*%d*. %s, пробег %dкм, %.2fл, цена/л: %.2f%s\n\n",
+				refuel.ID,
+				refuel.CreatedAt.Format(time.DateOnly),
+				refuel.Odometer,
+				refuel.Liters,
+				refuel.PricePerLiter,
+				h.cfg.DefaultCurrency)
+		}
+
+		_ = h.sendMessage(msg.Chat.ID, text)
 
 		return nil
 	})

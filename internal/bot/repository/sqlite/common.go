@@ -15,7 +15,7 @@ import (
 const driverName = "sqlite3"
 
 //go:embed migrations/*.sql
-var embedMigrations embed.FS
+var migrationsFS embed.FS
 
 type sqliteUnitOfWork struct {
 	db *sqlx.DB
@@ -66,7 +66,7 @@ func (t *sqliteTransaction) RefuelRepository() repository.RefuelRepository {
 }
 
 func runMigrations(db *sqlx.DB) error {
-	goose.SetBaseFS(embedMigrations)
+	goose.SetBaseFS(migrationsFS)
 
 	if err := goose.SetDialect(driverName); err != nil {
 		return err

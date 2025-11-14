@@ -21,7 +21,7 @@ type commonCommand struct {
 }
 
 func (h *commonCommand) sendMessage(chatID int64, msgText string) error {
-	msg := telegram.NewMessage(chatID, telegram.EscapeText(telegram.ModeMarkdown, msgText))
+	msg := telegram.NewMessage(chatID, msgText)
 	msg.ParseMode = telegram.ModeMarkdown
 
 	_, err := h.botAPI.Send(msg)

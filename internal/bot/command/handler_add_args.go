@@ -17,7 +17,7 @@ type addCommandArgs struct {
 func parseAddCommandArgs(cmdArgs string, prevRefuel *model.Refuel) (*addCommandArgs, error) {
 	args := strings.Fields(strings.TrimSpace(cmdArgs))
 	if len(args) < 3 {
-		return nil, fmt.Errorf("недостаточно параметров, укажите <пробег> <литры> <сумма чека>")
+		return nil, fmt.Errorf("недостаточно параметров, укажите <odometer> <litres> <price>")
 	}
 
 	odometer, err := stringutils.ParseInt64(args[0])
