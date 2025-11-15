@@ -9,14 +9,6 @@ import (
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/repository"
 )
 
-const helpText = `Добро пожаловать в Топливный бот 🚗
-
-*Доступные команды:*
- /start — помощь
- /add <odometer> <litres> <price> — добавить заправку
- /list [<start> <end>|*] — показать заправки за последний месяц, указанный период или все время
- /stats [<start> <end>|*] — показать статистика за последний месяц, указанный период или все время`
-
 type startCommand struct {
 	commonCommand
 }
@@ -32,5 +24,5 @@ func NewStartCommand(cfg *config.Config, botAPI *telegram.BotAPI, uow repository
 }
 
 func (h *startCommand) Process(_ context.Context, msg *telegram.Message) error {
-	return h.sendMessage(msg.Chat.ID, helpText)
+	return h.sendMessageFromTemplate(msg.Chat.ID, "templates/start.tmpl", nil)
 }

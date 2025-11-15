@@ -2,8 +2,6 @@ package command
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/model"
@@ -44,18 +42,15 @@ func (h listCommand) Process(ctx context.Context, msg *telegram.Message) error {
 			_ = h.sendMessage(msg.Chat.ID, "ℹ️ Нет заправок в выбранном периоде. Используйте /add чтобы добавить первую")
 		}
 
-		text := fmt.Sprintf("📝 *Заправки %s:*\n\n", cmdArgs.Label)
-		for _, refuel := range refuels {
-			text += fmt.Sprintf("*%d*. %s, пробег %dкм, %.2fл, цена/л: %.2f%s\n\n",
-				refuel.ID,
-				refuel.CreatedAt.Format(time.DateOnly),
-				refuel.Odometer,
-				refuel.Liters,
-				refuel.PricePerLiter,
-				h.cfg.DefaultCurrency)
-		}
-
-		_ = h.sendMessage(msg.Chat.ID, text)
+		_ = h.sendMessageFromTemplate(msg.Chat.ID, "templates/list.tmpl", struct {
+			Params  *listCommandArgs
+			Refuels []model.Refuel
+			Config  *config.Config
+		}{
+			Params:  cmdArgs,
+			Refuels: refuels,
+			Config:  h.cfg,
+		})
 
 		return nil
 	})
