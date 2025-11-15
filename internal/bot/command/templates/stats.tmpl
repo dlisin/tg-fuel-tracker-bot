@@ -1,0 +1,12 @@
+{{ $currency := .Config.DefaultCurrency  }}
+{{ if .Stats }}
+📊 *Стастистика {{ .Params.Label }}:*
+
+• Количество заправок: {{ printf "%d" .Stats.Entries }}
+• Пробег: _{{ printf "%d" .Stats.TotalDistance }}км_
+• Средний расход: _{{ printf "%.2f" .Stats.FuelConsumption }}л/100км_
+• Цена/л: _{{ printf "%.2f" .Stats.PricePerLiterFirst }}{{ $currency }} → {{ printf "%.2f" .Stats.PricePerLiterLast }}{{ $currency }}_ ({{ printf "%.2f" .Stats.PricePerLiterDeltaAbs }}{{ $currency }})
+• Общая сумма: _{{ printf "%.2f" .Stats.TotalCost }}{{ $currency }}_
+{{ else }}
+ℹ️ Недостаточно данных. Нужны минимум две записи в выбранном периоде.
+{{ end }}

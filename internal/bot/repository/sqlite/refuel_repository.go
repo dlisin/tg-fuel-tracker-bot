@@ -43,7 +43,7 @@ func (r *refuelRepository) List(ctx context.Context, userID model.TelegramID, fi
 		}
 	}
 
-	query += " ORDER BY created_at ASC"
+	query += " ORDER BY created_at DESC"
 
 	if filter.Limit > 0 {
 		queryArgs = append(queryArgs, filter.Limit)

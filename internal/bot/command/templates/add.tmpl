@@ -1,0 +1,13 @@
+{{ $currency := .Config.DefaultCurrency  }}
+⛽ *Заправка добавлена:*
+
+• Пробег _{{ printf "%d" .Refuel.Odometer }}км_
+• Топливо: _{{ printf "%.2f" .Refuel.Liters }}л_
+• Цена/л: _{{ printf "%.2f" .Refuel.PricePerLiter }}{{ $currency }}_
+{{ if .Stats }}
+📊 *Стастистика с последней заправки:*
+
+• Пробег: _{{ printf "%d" .Stats.TotalDistance }}км_
+• Средний расход: _{{ printf "%.2f" .Stats.FuelConsumption }}л/100км_
+• Цена/л: _{{ printf "%.2f" .Stats.PricePerLiterFirst }}{{ $currency }} → {{ printf "%.2f" .Stats.PricePerLiterLast }}{{ $currency }}_ ({{ printf "%.2f" .Stats.PricePerLiterDeltaAbs }}{{ $currency }})
+{{ end }}

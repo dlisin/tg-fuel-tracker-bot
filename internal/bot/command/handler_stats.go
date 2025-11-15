@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/model"
@@ -45,12 +44,15 @@ func (h statsCommand) Process(ctx context.Context, msg *telegram.Message) error 
 		}
 
 		stats := model.CreateRefuelStats(refuels)
-		_ = h.sendMessage(msg.Chat.ID,
-			fmt.Sprintf("📊 *Статистика %s:*\n\n• Пробег: %dкм\n• Средний расход: %.2fл/100км\n• Цена/л: %.2f%s → %.2f%s (%+.2f%s; %+.1f%%)",
-				cmdArgs.Label, stats.TotalDistance, stats.FuelConsumption,
-				stats.PricePerLiterFirst, h.cfg.DefaultCurrency,
-				stats.PricePerLiterLast, h.cfg.DefaultCurrency,
-				stats.PricePerLiterDeltaAbs, h.cfg.DefaultCurrency, stats.PricePerLiterDeltaPct))
+		_ = h.sendMessageFromTemplate(msg.Chat.ID, "templates/stats.tmpl", struct {
+			Params *listCommandArgs
+			Stats  *model.RefuelStats
+			Config *config.Config
+		}{
+			Params: cmdArgs,
+			Stats:  stats,
+			Config: h.cfg,
+		})
 
 		return nil
 	})

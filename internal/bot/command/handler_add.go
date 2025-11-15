@@ -2,15 +2,14 @@ package command
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/util/sliceutils"
 	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/model"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/repository"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/util/sliceutils"
 )
 
 type addCommand struct {
@@ -64,18 +63,20 @@ func (h *addCommand) Process(ctx context.Context, msg *telegram.Message) error {
 	}
 
 	if newRefuel != nil {
-		_ = h.sendMessage(msg.Chat.ID, fmt.Sprintf("⛽ Заправка добавлена:\n пробег %dкм, %.2fл, цена/л: %.2f%s",
-			newRefuel.Odometer, newRefuel.Liters, newRefuel.PricePerLiter, h.cfg.DefaultCurrency))
-
+		var stats *model.RefuelStats
 		if prevRefuel != nil {
-			stats := model.CreateRefuelStats([]model.Refuel{*prevRefuel, *newRefuel})
-			_ = h.sendMessage(msg.Chat.ID,
-				fmt.Sprintf("📊 Статистика с предыдущей заправки:\n• Пробег: %dкм\n• Средний расход: %.2fл/100км\n• Цена/л: %.2f%s → %.2f%s (%+.2f%s; %+.1f%%)",
-					stats.TotalDistance, stats.FuelConsumption,
-					stats.PricePerLiterFirst, h.cfg.DefaultCurrency,
-					stats.PricePerLiterLast, h.cfg.DefaultCurrency,
-					stats.PricePerLiterDeltaAbs, h.cfg.DefaultCurrency, stats.PricePerLiterDeltaPct))
+			stats = model.CreateRefuelStats([]model.Refuel{*prevRefuel, *newRefuel})
 		}
+
+		_ = h.sendMessageFromTemplate(msg.Chat.ID, "templates/add.tmpl", struct {
+			Refuel *model.Refuel
+			Stats  *model.RefuelStats
+			Config *config.Config
+		}{
+			Refuel: newRefuel,
+			Stats:  stats,
+			Config: h.cfg,
+		})
 	}
 
 	return nil
