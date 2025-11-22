@@ -38,10 +38,6 @@ func (h listCommand) Process(ctx context.Context, msg *telegram.Message) error {
 			return err
 		}
 
-		if len(refuels) == 0 {
-			_ = h.sendMessage(msg.Chat.ID, "ℹ️ Нет заправок в выбранном периоде. Используйте /add чтобы добавить первую")
-		}
-
 		_ = h.sendMessageFromTemplate(msg.Chat.ID, "templates/list.tmpl", struct {
 			Params  *listCommandArgs
 			Refuels []model.Refuel

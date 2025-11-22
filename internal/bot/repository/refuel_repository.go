@@ -16,5 +16,9 @@ type RefuelFilter struct {
 type RefuelRepository interface {
 	Create(ctx context.Context, refuel *model.Refuel) (*model.Refuel, error)
 
+	Delete(ctx context.Context, refuel *model.Refuel) error
+
+	GetByOdometer(ctx context.Context, userID model.TelegramID, odometer int64) (*model.Refuel, error)
+
 	List(ctx context.Context, userID model.TelegramID, filter RefuelFilter) ([]model.Refuel, error)
 }

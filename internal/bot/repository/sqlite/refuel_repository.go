@@ -2,6 +2,8 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
@@ -15,15 +17,44 @@ type refuelRepository struct {
 }
 
 func (r *refuelRepository) Create(ctx context.Context, refuel *model.Refuel) (*model.Refuel, error) {
-	err := r.tx.QueryRowxContext(ctx,
-		"INSERT INTO refuels (user_id, odometer, liters, price_per_liter, price_total) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-		refuel.UserID, refuel.Odometer, refuel.Liters, refuel.PricePerLiter, refuel.PriceTotal).Scan(&refuel.ID)
+	query := "INSERT INTO refuels (user_id, odometer, liters, price_per_liter, price_total) VALUES ($1, $2, $3, $4, $5) RETURNING id"
+	queryArgs := []interface{}{refuel.UserID, refuel.Odometer, refuel.Liters, refuel.PricePerLiter, refuel.PriceTotal}
+
+	err := r.tx.QueryRowxContext(ctx, query, queryArgs...).Scan(&refuel.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Printf("Refuel created: %+v\n", refuel)
 	return refuel, nil
+}
+
+func (r *refuelRepository) Delete(ctx context.Context, refuel *model.Refuel) error {
+	_, err := r.tx.ExecContext(ctx, "DELETE FROM refuels WHERE id = $1", refuel.ID)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Refuel deleted: %+v\n", refuel)
+	return nil
+}
+
+func (r *refuelRepository) GetByOdometer(ctx context.Context, userID model.TelegramID, odometer int64) (*model.Refuel, error) {
+	query := "SELECT id, user_id, odometer, liters, price_per_liter, price_total, created_at FROM refuels WHERE user_id = $1 and odometer = $2"
+	queryArgs := []interface{}{userID, odometer}
+
+	var refuel model.Refuel
+	err := r.tx.GetContext(ctx, &refuel, query, queryArgs...)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	log.Printf("Refuel found: %+v\n", refuel)
+	return &refuel, nil
 }
 
 func (r *refuelRepository) List(ctx context.Context, userID model.TelegramID, filter repository.RefuelFilter) ([]model.Refuel, error) {
