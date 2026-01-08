@@ -25,7 +25,7 @@ func NewStartCommand(cfg *config.Config, botAPI *telegram.BotAPI, refuelReposito
 }
 
 func (h *startCommand) Process(_ context.Context, msg *telegram.Message) error {
-	_, err := h.botAPI.Send(telegram.NewSetMyCommandsWithScope(telegram.NewBotCommandScopeChat(msg.Chat.ID),
+	_, err := h.botAPI.Request(telegram.NewSetMyCommandsWithScope(telegram.NewBotCommandScopeChat(msg.Chat.ID),
 		telegram.BotCommand{
 			Command:     "/start",
 			Description: "помощь",
