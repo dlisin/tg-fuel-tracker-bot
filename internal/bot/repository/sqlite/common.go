@@ -1,7 +1,6 @@
 package sqlite
 
 import (
-	"context"
 	"embed"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/config"
@@ -17,14 +16,6 @@ const driverName = "sqlite3"
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-type sqliteUnitOfWork struct {
-	db *sqlx.DB
-}
-
-type sqliteTransaction struct {
-	tx *sqlx.Tx
-}
-
 func NewSQLiteDB(cfg config.DatabaseConfig) (*sqlx.DB, error) {
 	db, err := sqlx.Open(driverName, cfg.Path)
 	if err != nil {
@@ -38,31 +29,10 @@ func NewSQLiteDB(cfg config.DatabaseConfig) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func NewUnitOfWork(db *sqlx.DB) repository.UnitOfWork {
-	return &sqliteUnitOfWork{
+func NewRefuelRepository(db *sqlx.DB) repository.RefuelRepository {
+	return &refuelRepository{
 		db: db,
 	}
-}
-
-func (u *sqliteUnitOfWork) Begin(ctx context.Context) (repository.Transaction, error) {
-	tx, err := u.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return &sqliteTransaction{tx: tx}, nil
-}
-
-func (t *sqliteTransaction) Commit() error {
-	return t.tx.Commit()
-}
-
-func (t *sqliteTransaction) Rollback() error {
-	return t.tx.Rollback()
-}
-
-func (t *sqliteTransaction) RefuelRepository() repository.RefuelRepository {
-	return &refuelRepository{t.tx}
 }
 
 func runMigrations(db *sqlx.DB) error {

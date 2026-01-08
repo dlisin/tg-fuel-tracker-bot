@@ -21,15 +21,15 @@ func NewCommandRegistry(cfg *config.Config, botAPI *telegram.BotAPI) (*CommandRe
 		return nil, fmt.Errorf("unable to create database instance: %w", err)
 	}
 
-	uow := sqlite.NewUnitOfWork(db)
+	refuelRepository := sqlite.NewRefuelRepository(db)
 
 	return &CommandRegistry{
 		handlersMap: map[string]command.Handler{
-			"start":  command.NewStartCommand(cfg, botAPI, uow),
-			"add":    command.NewAddCommand(cfg, botAPI, uow),
-			"delete": command.NewDeleteCommand(cfg, botAPI, uow),
-			"list":   command.NewListCommand(cfg, botAPI, uow),
-			"stats":  command.NewStatsCommand(cfg, botAPI, uow),
+			"start":  command.NewStartCommand(cfg, botAPI, refuelRepository),
+			"add":    command.NewAddCommand(cfg, botAPI, refuelRepository),
+			"delete": command.NewDeleteCommand(cfg, botAPI, refuelRepository),
+			"list":   command.NewListCommand(cfg, botAPI, refuelRepository),
+			"stats":  command.NewStatsCommand(cfg, botAPI, refuelRepository),
 		},
 	}, nil
 }

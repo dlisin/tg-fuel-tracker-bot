@@ -10,7 +10,7 @@ import (
 
 type listCommandArgs struct {
 	Label  string
-	Period *model.Range[time.Time]
+	Period model.Range[time.Time]
 }
 
 func parseListCommandArgs(cmdArgs string) (*listCommandArgs, error) {
@@ -20,7 +20,7 @@ func parseListCommandArgs(cmdArgs string) (*listCommandArgs, error) {
 	if len(args) == 0 {
 		return &listCommandArgs{
 			Label: "за последний месяц",
-			Period: &model.Range[time.Time]{
+			Period: model.Range[time.Time]{
 				Start: now.AddDate(0, -1, 0),
 				End:   now,
 			},
@@ -42,7 +42,7 @@ func parseListCommandArgs(cmdArgs string) (*listCommandArgs, error) {
 
 		return &listCommandArgs{
 			Label: fmt.Sprintf("за период с %s по %s", startDate.Format(time.DateOnly), endDate.Format(time.DateOnly)),
-			Period: &model.Range[time.Time]{
+			Period: model.Range[time.Time]{
 				Start: startDate,
 				End:   endDate,
 			},

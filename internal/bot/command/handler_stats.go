@@ -13,53 +13,41 @@ type statsCommand struct {
 	commonCommand
 }
 
-func NewStatsCommand(cfg *config.Config, botAPI *telegram.BotAPI, uow repository.UnitOfWork) Handler {
+func NewStatsCommand(cfg *config.Config, botAPI *telegram.BotAPI, refuelRepository repository.RefuelRepository) Handler {
 	return &statsCommand{
 		commonCommand: commonCommand{
-			cfg:    cfg,
-			botAPI: botAPI,
-			uow:    uow,
+			cfg:              cfg,
+			botAPI:           botAPI,
+			refuelRepository: refuelRepository,
 		},
 	}
 }
 
 func (h statsCommand) Process(ctx context.Context, msg *telegram.Message) error {
-	err := repository.WithTransaction(ctx, h.uow, func(ctx context.Context, tx repository.Transaction) error {
-		userID := model.TelegramID(msg.From.ID)
 
-		cmdArgs, err := parseListCommandArgs(msg.CommandArguments())
-		if err != nil {
-			_ = h.sendMessage(msg.Chat.ID, "⚠️ Ошибка ввода: "+err.Error())
-			return nil
-		}
-
-		refuels, err := tx.RefuelRepository().List(ctx, userID, repository.RefuelFilter{CreatedAt: cmdArgs.Period})
-		if err != nil {
-			return err
-		}
-
-		if len(refuels) < 2 {
-			_ = h.sendMessage(msg.Chat.ID, "ℹ️ Недостаточно данных. Нужны минимум две записи в выбранном периоде")
-			return nil
-		}
-
-		stats := model.CreateRefuelStats(refuels)
-		_ = h.sendMessageFromTemplate(msg.Chat.ID, "templates/stats.tmpl", struct {
-			Params *listCommandArgs
-			Stats  *model.RefuelStats
-			Config *config.Config
-		}{
-			Params: cmdArgs,
-			Stats:  stats,
-			Config: h.cfg,
-		})
-
-		return nil
-	})
+	cmdArgs, err := parseListCommandArgs(msg.CommandArguments())
 	if err != nil {
-		_ = h.sendMessage(msg.Chat.ID, "❌ Не удалось загрузить данные. Попробуйте позже")
-		return err
+		return h.sendMessage(msg.Chat.ID, "⚠️ Ошибка ввода: "+err.Error())
 	}
 
-	return nil
+	refuels, err := h.refuelRepository.List(ctx, model.TelegramID(msg.From.ID), cmdArgs.Period)
+	if err != nil {
+		return h.sendMessage(msg.Chat.ID, "❌ Не удалось загрузить данные. Попробуйте позже")
+	}
+
+	if len(refuels) < 2 {
+		return h.sendMessage(msg.Chat.ID, "ℹ️ Недостаточно данных. Нужны минимум две записи в выбранном периоде")
+	}
+
+	stats := model.CreateRefuelStats(refuels)
+
+	return h.sendMessageFromTemplate(msg.Chat.ID, "templates/stats.tmpl", struct {
+		Params *listCommandArgs
+		Stats  *model.RefuelStats
+		Config *config.Config
+	}{
+		Params: cmdArgs,
+		Stats:  stats,
+		Config: h.cfg,
+	})
 }

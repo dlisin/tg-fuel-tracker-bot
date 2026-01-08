@@ -21,9 +21,9 @@ type Handler interface {
 }
 
 type commonCommand struct {
-	cfg    *config.Config
-	botAPI *telegram.BotAPI
-	uow    repository.UnitOfWork
+	cfg              *config.Config
+	botAPI           *telegram.BotAPI
+	refuelRepository repository.RefuelRepository
 }
 
 func (h *commonCommand) sendMessageFromTemplate(chatID int64, templateName string, data interface{}) error {

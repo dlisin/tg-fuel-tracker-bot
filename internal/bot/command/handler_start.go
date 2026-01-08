@@ -14,12 +14,12 @@ type startCommand struct {
 	commonCommand
 }
 
-func NewStartCommand(cfg *config.Config, botAPI *telegram.BotAPI, uow repository.UnitOfWork) Handler {
+func NewStartCommand(cfg *config.Config, botAPI *telegram.BotAPI, refuelRepository repository.RefuelRepository) Handler {
 	return &startCommand{
 		commonCommand: commonCommand{
-			cfg:    cfg,
-			botAPI: botAPI,
-			uow:    uow,
+			cfg:              cfg,
+			botAPI:           botAPI,
+			refuelRepository: refuelRepository,
 		},
 	}
 }
