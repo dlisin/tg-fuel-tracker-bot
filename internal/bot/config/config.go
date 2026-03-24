@@ -11,6 +11,7 @@ const (
 	telegramBotToken = "TELEGRAM_BOT_TOKEN"
 	telegramBotDebug = "TELEGRAM_BOT_DEBUG"
 	databasePath     = "DATABASE_PATH"
+	proxyAddress     = "PROXY_ADDRESS"
 
 	defaultFuelType = "DEFAULT_FUEL_TYPE"
 	defaultCurrency = "DEFAULT_CURRENCY"
@@ -27,6 +28,8 @@ type Config struct {
 type TelegramBotConfig struct {
 	Token string
 	Debug bool
+
+	ProxyAddress string
 }
 
 type DatabaseConfig struct {
@@ -39,20 +42,18 @@ func Load() (*Config, error) {
 		commonConfig.WithDefaults(map[string]any{
 			telegramBotToken: "",
 			telegramBotDebug: false,
+			proxyAddress:     "",
 			databasePath:     "/var/lib/fuelbot/fuelbot.db",
 			defaultFuelType:  "ДТ",
 			defaultCurrency:  "₽",
 		}),
 	)
 
-	if commonCfg.GetString(telegramBotToken) == "" {
-		return nil, fmt.Errorf("%s must be set", telegramBotToken)
-	}
-
 	cfg := &Config{
 		TelegramBot: TelegramBotConfig{
-			Token: commonCfg.GetString(telegramBotToken),
-			Debug: commonCfg.GetBool(telegramBotDebug),
+			Token:        commonCfg.GetString(telegramBotToken),
+			Debug:        commonCfg.GetBool(telegramBotDebug),
+			ProxyAddress: commonCfg.GetString(proxyAddress),
 		},
 		Database: DatabaseConfig{
 			Path: commonCfg.GetString(databasePath),
@@ -61,6 +62,11 @@ func Load() (*Config, error) {
 		DefaultCurrency: commonCfg.GetString(defaultCurrency),
 	}
 	log.Printf("Loaded configuration: %+v\n", cfg)
+
+	// Validate config
+	if cfg.TelegramBot.Token == "" {
+		return nil, fmt.Errorf("%s must be set", telegramBotToken)
+	}
 
 	return cfg, nil
 }

@@ -3,8 +3,11 @@ package bot
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"net/url"
 
 	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"golang.org/x/net/proxy"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/config"
 )
@@ -15,7 +18,25 @@ type App struct {
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
-	botAPI, err := telegram.NewBotAPI(cfg.TelegramBot.Token)
+	httpClient := &http.Client{}
+
+	if cfg.TelegramBot.ProxyAddress != "" {
+		proxyURL, err := url.Parse(cfg.TelegramBot.ProxyAddress)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse proxy URL: %w", err)
+		}
+
+		proxyDialer, err := proxy.FromURL(proxyURL, proxy.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("failed to obtain proxy dialer: %w", err)
+		}
+
+		httpClient.Transport = &http.Transport{
+			Dial: proxyDialer.Dial,
+		}
+	}
+
+	botAPI, err := telegram.NewBotAPIWithClient(cfg.TelegramBot.Token, telegram.APIEndpoint, httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create bot instance: %w", err)
 	}
