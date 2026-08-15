@@ -1,0 +1,21 @@
+@startuml
+actor "User" as user
+participant Bot as bot
+participant Service as service
+participant CarRepository as carRepo
+participant UserCarsRepository as userCarsRepo
+
+user -> bot ++: /add-car [regNumber] [fuelType]
+
+bot -> service ++: AddCar(userID, regNumber, fuelType)
+
+service -> carRepo ++: Create(regNumber, fuelType)
+carRepo --> service --: OK
+
+service -> userCarsRepo ++: CreateUserCar(userID, carID, owner=true)
+userCarsRepo --> service --: OK
+
+service --> bot --: OK
+
+bot --> user --: OK
+@enduml

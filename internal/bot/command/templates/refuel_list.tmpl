@@ -1,0 +1,14 @@
+{{ $currency := .Config.DefaultCurrency  }}
+{{ $fuelType := .Config.Car.FuelType  }}
+{{ if .Refuels }}
+📝 *Список заправок {{ .Params.Label }}:*
+{{ range .Refuels }}
+• Дата: _{{ .CreatedAt.Format "2006-01-02" }}_
+• Пробег: _{{ printf "%d" .Odometer }}км_
+• Топливо: _{{ printf "%.2f" .Liters }}л_
+• Цена/л: _{{ printf "%.2f" .PricePerLiter }}{{ $currency }}_
+• Сумма чека: _{{ printf "%.2f" .PriceTotal }}{{ $currency }}_
+{{ end }}
+{{ else }}
+ℹ️ Нет заправок в выбранном периоде.
+{{ end }}

@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"text/template"
 
 	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/config"
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/repository"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 )
 
 //go:embed templates/*.tmpl
@@ -21,9 +23,9 @@ type Handler interface {
 }
 
 type commonCommand struct {
-	cfg              *config.Config
-	botAPI           *telegram.BotAPI
-	refuelRepository repository.RefuelRepository
+	cfg     config.BotConfig
+	botAPI  *telegram.BotAPI
+	service service.BotService
 }
 
 func (h *commonCommand) sendMessageFromTemplate(chatID int64, templateName string, data interface{}) error {
@@ -51,4 +53,52 @@ func (h *commonCommand) sendMessage(chatID int64, msgText string) error {
 	}
 
 	return nil
+}
+
+func (h *commonCommand) resolveCar(ctx context.Context, userID domain.TelegramID, regNumber *domain.RegNumber) (*domain.Car, error) {
+	cars, err := h.service.GetUserCars(ctx, userID)
+	if err != nil {
+		return nil, h.handleServiceError(err)
+	}
+
+	if regNumber != nil {
+		for _, car := range cars {
+			if car.RegNumber == *regNumber {
+				return &car, nil
+			}
+		}
+
+		return nil, fmt.Errorf("⚠️ Автомобиль с госномером %s не найден", *regNumber)
+	}
+
+	switch len(cars) {
+	case 0:
+		return nil, fmt.Errorf("⚠️ Сначала добавьте автомобиль")
+	case 1:
+		return &cars[0], nil
+	default:
+		return nil, fmt.Errorf("⚠️ У вас несколько автомобилей. Укажите госномер автомобиля")
+	}
+}
+
+func (h *commonCommand) handleServiceError(err error) error {
+	switch {
+	case errors.Is(err, service.ErrCarNotFound), errors.Is(err, service.ErrUserHasNoAccessToCar):
+		return errors.New("⚠️ Автомобиль не найден")
+
+	case errors.Is(err, service.ErrCarAlreadyExists):
+		return errors.New("⚠️ Автомобиль с таким госномером уже существует")
+
+	case errors.Is(err, service.ErrRefuelNotFound):
+		return errors.New("⚠️ Заправка не найдена")
+
+	case errors.Is(err, service.ErrRefuelOdometerTooLow):
+		return errors.New("⚠️ Пробег должен быть больше текущего пробега автомобиля")
+
+	case errors.Is(err, service.ErrStatsNotEnoughRefuels):
+		return errors.New("⚠️ Недостаточно заправок для расчета статистики")
+
+	default:
+		return errors.New("❌ Не удалось выполнить операцию. Попробуйте позже")
+	}
 }

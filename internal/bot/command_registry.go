@@ -2,59 +2,60 @@ package bot
 
 import (
 	"context"
-	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/command"
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/config"
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/repository/sqlite"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type CommandRegistry struct {
-	handlersMap map[string]command.Handler
+	logger   *slog.Logger
+	handlers map[string]command.Handler
 }
 
-func NewCommandRegistry(cfg *config.Config, botAPI *telegram.BotAPI) (*CommandRegistry, error) {
-	db, err := sqlite.NewSQLiteDB(cfg.Database)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create database instance: %w", err)
-	}
-
-	refuelRepository := sqlite.NewRefuelRepository(db)
-
+func NewCommandRegistry(logger *slog.Logger, cfg config.BotConfig, botAPI *telegram.BotAPI, service service.BotService) *CommandRegistry {
 	return &CommandRegistry{
-		handlersMap: map[string]command.Handler{
-			"start":  command.NewStartCommand(cfg, botAPI, refuelRepository),
-			"add":    command.NewAddCommand(cfg, botAPI, refuelRepository),
-			"delete": command.NewDeleteCommand(cfg, botAPI, refuelRepository),
-			"list":   command.NewListCommand(cfg, botAPI, refuelRepository),
-			"stats":  command.NewStatsCommand(cfg, botAPI, refuelRepository),
+		logger: logger.With(
+			slog.String("component", "CommandRegistry"),
+		),
+		handlers: map[string]command.Handler{
+			"start": command.NewStartCommand(cfg, botAPI, service),
+			// "car-add":       command.NewCarAddCommand(cfg, botAPI, service),
+			"refuel-add":    command.NewRefuelAddCommand(cfg, botAPI, service),
+			"refuel-delete": command.NewRefuelDeleteCommand(cfg, botAPI, service),
+			"refuel-list":   command.NewRefuelListCommand(cfg, botAPI, service),
+			"refuel-stats":  command.NewRefuelStatsCommand(cfg, botAPI, service),
 		},
-	}, nil
+	}
 }
 
-func (r *CommandRegistry) ProcessUpdate(update telegram.Update) {
+func (r *CommandRegistry) ProcessUpdate(ctx context.Context, update telegram.Update) {
 	msg := update.Message
-	ctx := context.Background()
-
-	if msg != nil {
-		if msg.IsCommand() {
-			log.Printf("Received command: %+v\n", msg)
-
-			err := r.processCommand(ctx, msg)
-			if err != nil {
-				log.Printf("unable to process command: %+v\n", err)
-			}
-		}
+	if msg == nil || !msg.IsCommand() {
+		return
 	}
-}
 
-func (r *CommandRegistry) processCommand(ctx context.Context, msg *telegram.Message) error {
-	handler, ok := r.handlersMap[msg.Command()]
+	logger := r.logger.With(
+		slog.String("operation", "ProcessUpdate"),
+		slog.String("command", msg.Command()),
+		slog.Int64("chatId", msg.Chat.ID),
+		slog.Int64("userId", msg.From.ID),
+	)
+
+	logger.InfoContext(ctx, "operation started")
+
+	handler, ok := r.handlers[msg.Command()]
 	if !ok {
-		return fmt.Errorf("unsupported command: %s", msg.Command())
+		logger.WarnContext(ctx, "operation aborted", slog.String("error", "unsupported command"))
+		return
 	}
 
-	return handler.Process(ctx, msg)
+	if err := handler.Process(ctx, msg); err != nil {
+		logger.ErrorContext(ctx, "operation failed", slog.Any("error", err))
+		return
+	}
+
+	logger.InfoContext(ctx, "operation completed")
 }
