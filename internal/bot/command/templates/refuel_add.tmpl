@@ -1,10 +1,9 @@
 {{ $currency := .Config.DefaultCurrency  }}
-{{ $fuelType := .Config.Car.FuelType  }}
 ⛽ *Заправка добавлена:*
 
 • Госномер: _{{ .Car.RegNumber }}_
 • Пробег: _{{ printf "%d" .Refuel.Odometer }}км_
-• Топливо ({{ .fuelType }}): _{{ printf "%.2f" .Refuel.Liters }}л_
+• Топливо: _{{ printf "%.2f" .Refuel.Liters }}л_
 • Цена/л: _{{ printf "%.2f" .Refuel.PricePerLiter }}{{ $currency }}_
 {{ if .Stats }}
 📊 *Стастистика с последней заправки:*

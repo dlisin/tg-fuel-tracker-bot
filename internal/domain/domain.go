@@ -3,6 +3,7 @@ package domain
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -61,11 +62,29 @@ type Refuel struct {
 	Liters        float64    `db:"liters"`
 	PricePerLiter float64    `db:"price_per_liter"`
 	PriceTotal    float64    `db:"price_total"`
-	CreatedBy     TelegramID `db:"user_id"`
+	CreatedBy     TelegramID `db:"created_by"`
 	CreatedAt     time.Time  `db:"created_at"`
 }
 
 func ParseRegNumber(value string) (RegNumber, error) {
+	value = strings.TrimSpace(value)
+	value = strings.ToUpper(value)
+	value = strings.NewReplacer(
+		" ", "",
+		"А", "A",
+		"В", "B",
+		"Е", "E",
+		"К", "K",
+		"М", "M",
+		"Н", "H",
+		"О", "O",
+		"Р", "P",
+		"С", "C",
+		"Т", "T",
+		"У", "Y",
+		"Х", "X",
+	).Replace(value)
+
 	if !regNumberRegexp.MatchString(value) {
 		return "", fmt.Errorf("invalid registration number: %s", value)
 	}

@@ -23,6 +23,7 @@ func NewApp(logger *slog.Logger, cfg config.BotConfig, service service.BotServic
 		return nil, fmt.Errorf("create bot API: %w", err)
 	}
 	logger.Info("telegram bot authorized", slog.String("username", botAPI.Self.UserName))
+	botAPI.Debug = true
 
 	commandRegistry := NewCommandRegistry(logger, cfg, botAPI, service)
 

@@ -30,19 +30,19 @@ func (h *startCommand) Process(_ context.Context, msg *telegram.Message) error {
 			Description: "помощь",
 		},
 		telegram.BotCommand{
-			Command:     "/refuel-add",
+			Command:     "/refuel_add",
 			Description: "добавить заправку",
 		},
 		telegram.BotCommand{
-			Command:     "/refuel-delete",
+			Command:     "/refuel_delete",
 			Description: "удалить заправку",
 		},
 		telegram.BotCommand{
-			Command:     "/refuel-list",
+			Command:     "/refuel_list",
 			Description: "показать заправки за указанный период",
 		},
 		telegram.BotCommand{
-			Command:     "/refuel-stats",
+			Command:     "/refuel_stats",
 			Description: "показать статистику за указанный период",
 		},
 	))

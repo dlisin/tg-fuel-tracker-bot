@@ -42,8 +42,9 @@ type StorageConfig struct {
 }
 
 type SQLiteStorageConfig struct {
-	Path           string `yaml:"path" env:"STORAGE_PATH" default:"./fuelbot.db"`
-	MaxConnections int    `yaml:"maxConnections" env:"STORAGE_MAX_CONNECTIONS" default:"1"`
+	Path             string `yaml:"path" env:"STORAGE_PATH" default:"./fuelbot.db"`
+	MaxConnections   int    `yaml:"maxConnections" env:"STORAGE_MAX_CONNECTIONS"`
+	ConnectionParams string `yaml:"connectionParams" env:"STORAGE_CONNECTION_PARAMS"`
 }
 
 type CacheConfig struct {

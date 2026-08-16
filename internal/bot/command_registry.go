@@ -23,10 +23,10 @@ func NewCommandRegistry(logger *slog.Logger, cfg config.BotConfig, botAPI *teleg
 		handlers: map[string]command.Handler{
 			"start": command.NewStartCommand(cfg, botAPI, service),
 			// "car-add":       command.NewCarAddCommand(cfg, botAPI, service),
-			"refuel-add":    command.NewRefuelAddCommand(cfg, botAPI, service),
-			"refuel-delete": command.NewRefuelDeleteCommand(cfg, botAPI, service),
-			"refuel-list":   command.NewRefuelListCommand(cfg, botAPI, service),
-			"refuel-stats":  command.NewRefuelStatsCommand(cfg, botAPI, service),
+			"refuel_add":    command.NewRefuelAddCommand(cfg, botAPI, service),
+			"refuel_delete": command.NewRefuelDeleteCommand(cfg, botAPI, service),
+			"refuel_list":   command.NewRefuelListCommand(cfg, botAPI, service),
+			"refuel_stats":  command.NewRefuelStatsCommand(cfg, botAPI, service),
 		},
 	}
 }

@@ -40,13 +40,19 @@ func (s *SQLiteStorage) Open(ctx context.Context) error {
 
 	logger.InfoContext(ctx, "operation started")
 	err := func() error {
-		db, err := sqlx.Open("sqlite3", s.config.Path)
+		connectionString := s.config.Path
+		if s.config.ConnectionParams != "" {
+			connectionString += "?" + s.config.ConnectionParams
+		}
+
+		db, err := sqlx.Open("sqlite3", connectionString)
 		if err != nil {
 			return err
 		}
 
-		db.SetMaxOpenConns(s.config.MaxConnections)
-		db.SetMaxIdleConns(s.config.MaxConnections)
+		if s.config.MaxConnections > 0 {
+			db.SetMaxOpenConns(s.config.MaxConnections)
+		}
 
 		logger.DebugContext(ctx, "checking database connection")
 		if err := db.PingContext(ctx); err != nil {
