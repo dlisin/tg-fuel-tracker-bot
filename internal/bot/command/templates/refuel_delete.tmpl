@@ -1,0 +1,9 @@
+{{ $currency := .Config.DefaultCurrency  }}
+🗑️ *Заправка удалена:*
+
+• Дата: _{{ .Refuel.CreatedAt.Format "2006-01-02" }}_
+• Госномер: _{{ .Car.RegNumber }}_
+• Пробег: _{{ printf "%d" .Refuel.Odometer }}км_
+• Топливо: _{{ printf "%.2f" .Refuel.Liters }}л_
+• Цена/л: _{{ printf "%.2f" .Refuel.PricePerLiter }}{{ $currency }}_
+• Сумма чека: _{{ printf "%.2f" .Refuel.PriceTotal }}{{ $currency }}_
