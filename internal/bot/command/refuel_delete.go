@@ -3,7 +3,8 @@ package command
 import (
 	"context"
 
-	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	telegram "github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
@@ -14,7 +15,7 @@ type refuelDeleteCommand struct {
 	commonCommand
 }
 
-func NewRefuelDeleteCommand(cfg config.BotConfig, botAPI *telegram.BotAPI, service service.BotService) Handler {
+func NewRefuelDeleteCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) Handler {
 	return &refuelDeleteCommand{
 		commonCommand: commonCommand{
 			cfg:     cfg,
@@ -24,19 +25,19 @@ func NewRefuelDeleteCommand(cfg config.BotConfig, botAPI *telegram.BotAPI, servi
 	}
 }
 
-func (h *refuelDeleteCommand) Process(ctx context.Context, msg *telegram.Message) error {
+func (h *refuelDeleteCommand) Process(ctx context.Context, msg *models.Message) error {
 	userID := domain.TelegramID(msg.From.ID)
 
 	cmdArgs, err := parseRefuelDeleteCommandArgs(
-		msg.CommandArguments(),
+		parseCommandArgs(msg.Text),
 	)
 	if err != nil {
-		return h.sendMessage(msg.Chat.ID, "⚠️ Ошибка ввода: "+err.Error())
+		return h.sendMessage(ctx, msg.Chat.ID, "⚠️ Ошибка ввода: "+err.Error())
 	}
 
 	car, err := h.resolveCar(ctx, userID, cmdArgs.RegNumber)
 	if err != nil {
-		return h.sendMessage(msg.Chat.ID, err.Error())
+		return h.sendMessage(ctx, msg.Chat.ID, err.Error())
 	}
 
 	refuel, err := h.service.DeleteRefuel(ctx, userID, service.DeleteRefuelParams{
@@ -44,10 +45,10 @@ func (h *refuelDeleteCommand) Process(ctx context.Context, msg *telegram.Message
 		Odometer:  cmdArgs.Odometer,
 	})
 	if err != nil {
-		return h.sendMessage(msg.Chat.ID, h.handleServiceError(err).Error())
+		return h.sendMessage(ctx, msg.Chat.ID, h.handleServiceError(err).Error())
 	}
 
-	return h.sendMessageFromTemplate(msg.Chat.ID, "templates/refuel_delete.tmpl",
+	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "templates/refuel_delete.tmpl",
 		struct {
 			Car    *domain.Car
 			Refuel *domain.Refuel

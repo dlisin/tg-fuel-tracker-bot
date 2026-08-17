@@ -3,7 +3,8 @@ package command
 import (
 	"context"
 
-	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	telegram "github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
@@ -14,7 +15,7 @@ type refuelAddCommand struct {
 	commonCommand
 }
 
-func NewRefuelAddCommand(cfg config.BotConfig, botAPI *telegram.BotAPI, service service.BotService) Handler {
+func NewRefuelAddCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) Handler {
 	return &refuelAddCommand{
 		commonCommand: commonCommand{
 			cfg:     cfg,
@@ -24,17 +25,17 @@ func NewRefuelAddCommand(cfg config.BotConfig, botAPI *telegram.BotAPI, service 
 	}
 }
 
-func (h *refuelAddCommand) Process(ctx context.Context, msg *telegram.Message) error {
+func (h *refuelAddCommand) Process(ctx context.Context, msg *models.Message) error {
 	userID := domain.TelegramID(msg.From.ID)
 
-	cmdArgs, err := parseRefuelAddCommandArgs(msg.CommandArguments())
+	cmdArgs, err := parseRefuelAddCommandArgs(parseCommandArgs(msg.Text))
 	if err != nil {
-		return h.sendMessage(msg.Chat.ID, "⚠️ Ошибка ввода: "+err.Error())
+		return h.sendMessage(ctx, msg.Chat.ID, "⚠️ Ошибка ввода: "+err.Error())
 	}
 
 	car, err := h.resolveCar(ctx, userID, cmdArgs.RegNumber)
 	if err != nil {
-		return h.sendMessage(msg.Chat.ID, err.Error())
+		return h.sendMessage(ctx, msg.Chat.ID, err.Error())
 	}
 
 	refuel, err := h.service.AddRefuel(ctx, userID, service.AddRefuelParams{
@@ -44,12 +45,12 @@ func (h *refuelAddCommand) Process(ctx context.Context, msg *telegram.Message) e
 		PriceTotal: cmdArgs.TotalPrice,
 	})
 	if err != nil {
-		return h.sendMessage(msg.Chat.ID, h.handleServiceError(err).Error())
+		return h.sendMessage(ctx, msg.Chat.ID, h.handleServiceError(err).Error())
 	}
 
 	stats, _ := h.service.GetLatestRefuelStats(ctx, userID, car.RegNumber)
 
-	return h.sendMessageFromTemplate(msg.Chat.ID, "templates/refuel_add.tmpl", struct {
+	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "templates/refuel_add.tmpl", struct {
 		Car    *domain.Car
 		Refuel *domain.Refuel
 		Stats  *service.RefuelStats

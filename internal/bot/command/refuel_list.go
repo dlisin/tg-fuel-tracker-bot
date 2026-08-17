@@ -6,14 +6,15 @@ import (
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
-	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	telegram "github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 )
 
 type refuelListCommand struct {
 	commonCommand
 }
 
-func NewRefuelListCommand(cfg config.BotConfig, botAPI *telegram.BotAPI, service service.BotService) Handler {
+func NewRefuelListCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) Handler {
 	return &refuelListCommand{
 		commonCommand: commonCommand{
 			cfg:     cfg,
@@ -23,17 +24,17 @@ func NewRefuelListCommand(cfg config.BotConfig, botAPI *telegram.BotAPI, service
 	}
 }
 
-func (h *refuelListCommand) Process(ctx context.Context, msg *telegram.Message) error {
+func (h *refuelListCommand) Process(ctx context.Context, msg *models.Message) error {
 	userID := domain.TelegramID(msg.From.ID)
 
-	cmdArgs, err := parseListCommandArgs(msg.CommandArguments())
+	cmdArgs, err := parseListCommandArgs(parseCommandArgs(msg.Text))
 	if err != nil {
-		return h.sendMessage(msg.Chat.ID, "⚠️ Ошибка ввода: "+err.Error())
+		return h.sendMessage(ctx, msg.Chat.ID, "⚠️ Ошибка ввода: "+err.Error())
 	}
 
 	car, err := h.resolveCar(ctx, userID, cmdArgs.RegNumber)
 	if err != nil {
-		return h.sendMessage(msg.Chat.ID, err.Error())
+		return h.sendMessage(ctx, msg.Chat.ID, err.Error())
 	}
 
 	refuels, err := h.service.GetRefuelsForPeriod(ctx, userID, service.GetRefuelsForPeriodParams{
@@ -42,10 +43,10 @@ func (h *refuelListCommand) Process(ctx context.Context, msg *telegram.Message) 
 		To:        cmdArgs.To,
 	})
 	if err != nil {
-		return h.sendMessage(msg.Chat.ID, h.handleServiceError(err).Error())
+		return h.sendMessage(ctx, msg.Chat.ID, h.handleServiceError(err).Error())
 	}
 
-	return h.sendMessageFromTemplate(msg.Chat.ID, "templates/refuel_list.tmpl", struct {
+	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "templates/refuel_list.tmpl", struct {
 		Params  *listCommandArgs
 		Car     *domain.Car
 		Refuels []domain.Refuel

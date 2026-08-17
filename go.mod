@@ -3,7 +3,7 @@ module github.com/dlisin/tg-fuel-tracker-bot
 go 1.25
 
 require (
-	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
+	github.com/go-telegram/bot v1.23.0
 	modernc.org/sqlite v1.39.1 // indirect
 )
 
