@@ -6,9 +6,12 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"strings"
 	"text/template"
+	"unicode"
 
-	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	telegram "github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
@@ -19,16 +22,16 @@ import (
 var templatesFS embed.FS
 
 type Handler interface {
-	Process(ctx context.Context, msg *telegram.Message) error
+	Process(ctx context.Context, msg *models.Message) error
 }
 
 type commonCommand struct {
 	cfg     config.BotConfig
-	botAPI  *telegram.BotAPI
+	botAPI  *telegram.Bot
 	service service.BotService
 }
 
-func (h *commonCommand) sendMessageFromTemplate(chatID int64, templateName string, data interface{}) error {
+func (h *commonCommand) sendMessageFromTemplate(ctx context.Context, chatID int64, templateName string, data interface{}) error {
 	t, err := template.ParseFS(templatesFS, templateName)
 	if err != nil {
 		return err
@@ -40,14 +43,15 @@ func (h *commonCommand) sendMessageFromTemplate(chatID int64, templateName strin
 		return err
 	}
 
-	return h.sendMessage(chatID, out.String())
+	return h.sendMessage(ctx, chatID, out.String())
 }
 
-func (h *commonCommand) sendMessage(chatID int64, msgText string) error {
-	msg := telegram.NewMessage(chatID, msgText)
-	msg.ParseMode = telegram.ModeMarkdown
-
-	_, err := h.botAPI.Send(msg)
+func (h *commonCommand) sendMessage(ctx context.Context, chatID int64, msgText string) error {
+	_, err := h.botAPI.SendMessage(ctx, &telegram.SendMessageParams{
+		ChatID:    chatID,
+		Text:      msgText,
+		ParseMode: models.ParseModeMarkdownV1,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
 	}
@@ -101,4 +105,13 @@ func (h *commonCommand) handleServiceError(err error) error {
 	default:
 		return errors.New("❌ Не удалось выполнить операцию. Попробуйте позже")
 	}
+}
+
+func parseCommandArgs(text string) string {
+	index := strings.IndexFunc(text, unicode.IsSpace)
+	if index == -1 {
+		return ""
+	}
+
+	return strings.TrimSpace(text[index:])
 }

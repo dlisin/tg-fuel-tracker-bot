@@ -3,7 +3,8 @@ package command
 import (
 	"context"
 
-	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	telegram "github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
@@ -13,7 +14,7 @@ type startCommand struct {
 	commonCommand
 }
 
-func NewStartCommand(cfg config.BotConfig, botAPI *telegram.BotAPI, service service.BotService) Handler {
+func NewStartCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) Handler {
 	return &startCommand{
 		commonCommand: commonCommand{
 			cfg:     cfg,
@@ -23,32 +24,37 @@ func NewStartCommand(cfg config.BotConfig, botAPI *telegram.BotAPI, service serv
 	}
 }
 
-func (h *startCommand) Process(_ context.Context, msg *telegram.Message) error {
-	_, err := h.botAPI.Request(telegram.NewSetMyCommandsWithScope(telegram.NewBotCommandScopeChat(msg.Chat.ID),
-		telegram.BotCommand{
-			Command:     "/start",
-			Description: "помощь",
+func (h *startCommand) Process(ctx context.Context, msg *models.Message) error {
+	_, err := h.botAPI.SetMyCommands(ctx, &telegram.SetMyCommandsParams{
+		Scope: &models.BotCommandScopeChat{
+			ChatID: msg.Chat.ID,
 		},
-		telegram.BotCommand{
-			Command:     "/refuel_add",
-			Description: "добавить заправку",
+		Commands: []models.BotCommand{
+			{
+				Command:     "start",
+				Description: "помощь",
+			},
+			{
+				Command:     "refuel_add",
+				Description: "добавить заправку",
+			},
+			{
+				Command:     "refuel_delete",
+				Description: "удалить заправку",
+			},
+			{
+				Command:     "refuel_list",
+				Description: "показать заправки за указанный период",
+			},
+			{
+				Command:     "refuel_stats",
+				Description: "показать статистику за указанный период",
+			},
 		},
-		telegram.BotCommand{
-			Command:     "/refuel_delete",
-			Description: "удалить заправку",
-		},
-		telegram.BotCommand{
-			Command:     "/refuel_list",
-			Description: "показать заправки за указанный период",
-		},
-		telegram.BotCommand{
-			Command:     "/refuel_stats",
-			Description: "показать статистику за указанный период",
-		},
-	))
+	})
 	if err != nil {
 		return err
 	}
 
-	return h.sendMessageFromTemplate(msg.Chat.ID, "templates/start.tmpl", nil)
+	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "templates/start.tmpl", nil)
 }

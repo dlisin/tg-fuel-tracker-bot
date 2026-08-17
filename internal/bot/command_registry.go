@@ -7,19 +7,22 @@ import (
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/command"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
-	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	telegram "github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 )
 
 type CommandRegistry struct {
 	logger   *slog.Logger
+	botAPI   *telegram.Bot
 	handlers map[string]command.Handler
 }
 
-func NewCommandRegistry(logger *slog.Logger, cfg config.BotConfig, botAPI *telegram.BotAPI, service service.BotService) *CommandRegistry {
+func NewCommandRegistry(logger *slog.Logger, cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) *CommandRegistry {
 	return &CommandRegistry{
 		logger: logger.With(
 			slog.String("component", "CommandRegistry"),
 		),
+		botAPI: botAPI,
 		handlers: map[string]command.Handler{
 			"start": command.NewStartCommand(cfg, botAPI, service),
 			// "car-add":       command.NewCarAddCommand(cfg, botAPI, service),
@@ -31,31 +34,38 @@ func NewCommandRegistry(logger *slog.Logger, cfg config.BotConfig, botAPI *teleg
 	}
 }
 
-func (r *CommandRegistry) ProcessUpdate(ctx context.Context, update telegram.Update) {
-	msg := update.Message
-	if msg == nil || !msg.IsCommand() {
-		return
+func (r *CommandRegistry) Register() {
+	for commandName, handler := range r.handlers {
+		r.botAPI.RegisterHandler(
+			telegram.HandlerTypeMessageText,
+			commandName,
+			telegram.MatchTypeCommandStartOnly,
+			r.commandHandler(commandName, handler),
+		)
 	}
+}
 
-	logger := r.logger.With(
-		slog.String("operation", "ProcessUpdate"),
-		slog.String("command", msg.Command()),
-		slog.Int64("chatId", msg.Chat.ID),
-		slog.Int64("userId", msg.From.ID),
-	)
+func (r *CommandRegistry) commandHandler(commandName string, handler command.Handler) telegram.HandlerFunc {
+	return func(ctx context.Context, _ *telegram.Bot, update *models.Update) {
+		msg := update.Message
+		if msg == nil || msg.From == nil {
+			return
+		}
 
-	logger.InfoContext(ctx, "operation started")
+		logger := r.logger.With(
+			slog.String("operation", "ProcessCommand"),
+			slog.String("command", commandName),
+			slog.Int64("chatId", msg.Chat.ID),
+			slog.Int64("userId", msg.From.ID),
+		)
 
-	handler, ok := r.handlers[msg.Command()]
-	if !ok {
-		logger.WarnContext(ctx, "operation aborted", slog.String("error", "unsupported command"))
-		return
+		logger.InfoContext(ctx, "operation started")
+
+		if err := handler.Process(ctx, msg); err != nil {
+			logger.ErrorContext(ctx, "operation failed", slog.Any("error", err))
+			return
+		}
+
+		logger.InfoContext(ctx, "operation completed")
 	}
-
-	if err := handler.Process(ctx, msg); err != nil {
-		logger.ErrorContext(ctx, "operation failed", slog.Any("error", err))
-		return
-	}
-
-	logger.InfoContext(ctx, "operation completed")
 }
