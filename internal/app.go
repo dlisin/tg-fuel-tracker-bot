@@ -13,9 +13,9 @@ import (
 )
 
 type App struct {
+	cfg     config.Config
 	logger  *slog.Logger
 	storage storage.Storage
-	bot     *bot.Bot
 }
 
 func NewApp() (*App, error) {
@@ -36,17 +36,10 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("unable to create storage: %w", err)
 	}
 
-	botService := service.NewBotService(appLogger, appStorage.UnitOfWork())
-
-	telegramBot, err := bot.New(appLogger, cfg.Bot, botService)
-	if err != nil {
-		return nil, fmt.Errorf("create bot: %w", err)
-	}
-
 	return &App{
+		cfg:     *cfg,
 		logger:  appLogger,
 		storage: appStorage,
-		bot:     telegramBot,
 	}, nil
 }
 
@@ -61,7 +54,14 @@ func (a *App) Run(ctx context.Context) error {
 		}
 	}()
 
-	if err := a.bot.Run(ctx); err != nil {
+	botService := service.NewBotService(a.logger, a.storage.UnitOfWork())
+
+	telegramBot, err := bot.New(a.logger, a.cfg.Bot, botService)
+	if err != nil {
+		return fmt.Errorf("create bot: %w", err)
+	}
+
+	if err := telegramBot.Run(ctx); err != nil {
 		return fmt.Errorf("unable to run bot: %w", err)
 	}
 
