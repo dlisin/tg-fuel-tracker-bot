@@ -8,31 +8,41 @@ import (
 	telegram "github.com/go-telegram/bot"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/infrastructure/scheduler"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 )
 
 type Bot struct {
 	logger          *slog.Logger
-	botAPI          *telegram.Bot
+	cfg             config.BotConfig
 	commandRegistry *CommandRegistry
+	taskRegistry    *TaskRegistry
 }
 
-func New(logger *slog.Logger, cfg config.BotConfig, service service.BotService) (*Bot, error) {
-	botAPI, err := telegram.New(cfg.Token, telegram.WithDebug())
-	if err != nil {
-		return nil, fmt.Errorf("create bot API: %w", err)
-	}
-
+func New(logger *slog.Logger, cfg config.BotConfig, service service.BotService, scheduler scheduler.Scheduler) *Bot {
 	return &Bot{
 		logger:          logger,
-		botAPI:          botAPI,
-		commandRegistry: NewCommandRegistry(logger, cfg, botAPI, service),
-	}, nil
+		cfg:             cfg,
+		commandRegistry: NewCommandRegistry(logger, cfg, service),
+		taskRegistry:    NewTaskRegistry(logger, cfg, service, scheduler),
+	}
 }
 
 func (b *Bot) Run(ctx context.Context) error {
-	b.commandRegistry.Register()
-	b.botAPI.Start(ctx)
+	botAPI, err := telegram.New(b.cfg.Token, telegram.WithDebug())
+	if err != nil {
+		return fmt.Errorf("unable to create bot API: %w", err)
+	}
+
+	if err := b.commandRegistry.Register(botAPI); err != nil {
+		return fmt.Errorf("unable to register commands: %w", err)
+	}
+
+	if err := b.taskRegistry.Register(botAPI); err != nil {
+		return fmt.Errorf("unable to register tasks: %w", err)
+	}
+
+	botAPI.Start(ctx)
 
 	return nil
 }

@@ -1,15 +1,11 @@
 {{ $currency := .Config.DefaultCurrency  }}
-{{ if .Stats }}
-📊 *Стастистика {{ .Params.Label }}:*
+📊 *Стастистика заправок {{ .Label }} :*
 
 • Госномер: _{{ .Car.RegNumber }}_
 • Количество заправок: {{ printf "%d" .Stats.Entries }}
-{{- if .Stats.Consumption }}
+{{ if .Stats.Consumption }}
 • Пробег: _{{ printf "%d" .Stats.Consumption.TotalDistance }}км_
 • Средний расход: _{{ printf "%.2f" .Stats.Consumption.FuelConsumption }}л/100км_
-{{- end }}
+{{ end }}
 • Цена/л: _{{ printf "%.2f" .Stats.Price.FirstLast.From }}{{ $currency }} → {{ printf "%.2f" .Stats.Price.FirstLast.To }}{{ $currency }}_ ({{ printf "%+.2f" .Stats.Price.FirstLast.Delta }}{{ $currency }})
 • Общая сумма: _{{ printf "%.2f" .Stats.TotalCost }}{{ $currency }}_
-{{ else }}
-ℹ️ Нет заправок в выбранном периоде.
-{{ end }}

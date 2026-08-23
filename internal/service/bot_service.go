@@ -37,6 +37,8 @@ type BotService interface {
 
 	GetUserCars(ctx context.Context, userID domain.TelegramID) ([]domain.Car, error)
 
+	GetAllCars(ctx context.Context) ([]domain.Car, error)
+
 	AddRefuel(ctx context.Context, userID domain.TelegramID, params AddRefuelParams) (*domain.Refuel, error)
 
 	DeleteRefuel(ctx context.Context, userID domain.TelegramID, params DeleteRefuelParams) (*domain.Refuel, error)

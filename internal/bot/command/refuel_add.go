@@ -11,12 +11,12 @@ import (
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 )
 
-type refuelAddCommand struct {
+type RefuelAddCommand struct {
 	commonCommand
 }
 
-func NewRefuelAddCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) Handler {
-	return &refuelAddCommand{
+func NewRefuelAddCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) *RefuelAddCommand {
+	return &RefuelAddCommand{
 		commonCommand: commonCommand{
 			cfg:     cfg,
 			botAPI:  botAPI,
@@ -25,7 +25,7 @@ func NewRefuelAddCommand(cfg config.BotConfig, botAPI *telegram.Bot, service ser
 	}
 }
 
-func (h *refuelAddCommand) Process(ctx context.Context, msg *models.Message) error {
+func (h *RefuelAddCommand) Process(ctx context.Context, msg *models.Message) error {
 	userID := domain.TelegramID(msg.From.ID)
 
 	cmdArgs, err := parseRefuelAddCommandArgs(parseCommandArgs(msg.Text))
@@ -54,11 +54,11 @@ func (h *refuelAddCommand) Process(ctx context.Context, msg *models.Message) err
 		Car    *domain.Car
 		Refuel *domain.Refuel
 		Stats  *service.RefuelStats
-		Config config.BotConfig
+		Config config.BotPreferencesConfig
 	}{
 		Car:    car,
 		Refuel: refuel,
 		Stats:  stats,
-		Config: h.cfg,
+		Config: h.cfg.Preferences,
 	})
 }

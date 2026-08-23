@@ -11,7 +11,7 @@ type SQLiteUserCarInviteRepository struct {
 	db     sqlx.ExtContext
 }
 
-func NewSQLiteUserCarInviteRepository(logger *slog.Logger, db sqlx.ExtContext) *SQLiteUserCarRepository {
+func NewUserCarInviteRepository(logger *slog.Logger, db sqlx.ExtContext) *SQLiteUserCarRepository {
 	return &SQLiteUserCarRepository{
 		logger: logger.With(
 			slog.String("component", "SQLiteUserCarInviteRepository"),

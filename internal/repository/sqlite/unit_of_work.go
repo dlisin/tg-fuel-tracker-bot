@@ -58,5 +58,5 @@ func (t *SQLiteTransaction) RefuelRepository() repository.RefuelRepository {
 }
 
 func (t *SQLiteTransaction) UserCarInviteRepository() repository.UserCarInviteRepository {
-	return NewSQLiteUserCarInviteRepository(t.logger, t.tx)
+	return NewUserCarInviteRepository(t.logger, t.tx)
 }

@@ -25,19 +25,32 @@ func NewUserCarRepository(logger *slog.Logger, db sqlx.ExtContext) *SQLiteUserCa
 	}
 }
 
-func (r *SQLiteUserCarRepository) Get(ctx context.Context, userID domain.TelegramID, carID domain.CarID) (*domain.UserCar, error) {
+func (r *SQLiteUserCarRepository) Get(ctx context.Context, userID domain.TelegramID, regNumber domain.RegNumber) (*domain.Car, error) {
 	logger := r.logger.With(
 		slog.String("operation", "Get"),
 		slog.Uint64("userId", uint64(userID)),
-		slog.Uint64("carId", uint64(carID)),
+		slog.String("regNumber", regNumber.String()),
 	)
 
-	const query = `SELECT id, user_id, car_id, is_owner, created_at FROM user_cars WHERE user_id = ? AND car_id = ?`
-	queryArgs := []any{userID, carID}
+	const query = `
+		SELECT
+			c.id,
+			c.created_by,
+			c.reg_number,
+			c.fuel_type,
+			c.odometer,
+			c.created_at,
+			c.updated_at
+		FROM user_cars AS uc
+		INNER JOIN cars AS c ON c.id = uc.car_id
+		WHERE uc.user_id = ?
+		  AND c.reg_number = ?
+	`
+	queryArgs := []any{userID, regNumber}
 	logger.DebugContext(ctx, "executing query", slog.String("query", query), slog.Any("queryArgs", queryArgs))
 
-	var userCar domain.UserCar
-	if err := r.db.QueryRowxContext(ctx, query, queryArgs...).StructScan(&userCar); err != nil {
+	var car domain.Car
+	if err := r.db.QueryRowxContext(ctx, query, queryArgs...).StructScan(&car); err != nil {
 		err = translateError(err)
 		if errors.Is(err, repository.ErrEntityNotFound) {
 			logger.DebugContext(ctx, "entity not found")
@@ -48,8 +61,8 @@ func (r *SQLiteUserCarRepository) Get(ctx context.Context, userID domain.Telegra
 		return nil, err
 	}
 
-	logger.DebugContext(ctx, "entity found", slog.Uint64("userCarId", userCar.ID))
-	return &userCar, nil
+	logger.DebugContext(ctx, "entity found", slog.Uint64("carId", uint64(car.ID)))
+	return &car, nil
 }
 
 func (r *SQLiteUserCarRepository) List(ctx context.Context, userID domain.TelegramID) ([]domain.Car, error) {
@@ -64,6 +77,7 @@ func (r *SQLiteUserCarRepository) List(ctx context.Context, userID domain.Telegr
 			c.reg_number,
 			c.fuel_type,
 			c.odometer,
+			c.created_by,
 			c.created_at,
 			c.updated_at
 		FROM user_cars AS uc
@@ -90,11 +104,10 @@ func (r *SQLiteUserCarRepository) Create(ctx context.Context, userCar *domain.Us
 		slog.String("operation", "Create"),
 		slog.Uint64("userId", uint64(userCar.UserID)),
 		slog.Uint64("carId", uint64(userCar.CarID)),
-		slog.Bool("isOwner", userCar.IsOwner),
 	)
 
-	const query = `INSERT INTO user_cars (user_id, car_id, is_owner, created_at) VALUES (?, ?, ?, ?) RETURNING id`
-	queryArgs := []any{userCar.UserID, userCar.CarID, userCar.IsOwner, userCar.CreatedAt}
+	const query = `INSERT INTO user_cars (user_id, car_id, created_at) VALUES (?, ?, ?) RETURNING id`
+	queryArgs := []any{userCar.UserID, userCar.CarID, userCar.CreatedAt}
 
 	logger.DebugContext(ctx, "executing query", slog.String("query", query), slog.Any("queryArgs", queryArgs))
 

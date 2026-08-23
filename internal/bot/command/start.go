@@ -10,12 +10,12 @@ import (
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 )
 
-type startCommand struct {
+type StartCommand struct {
 	commonCommand
 }
 
-func NewStartCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) Handler {
-	return &startCommand{
+func NewStartCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) *StartCommand {
+	return &StartCommand{
 		commonCommand: commonCommand{
 			cfg:     cfg,
 			botAPI:  botAPI,
@@ -24,7 +24,7 @@ func NewStartCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service
 	}
 }
 
-func (h *startCommand) Process(ctx context.Context, msg *models.Message) error {
+func (h *StartCommand) Process(ctx context.Context, msg *models.Message) error {
 	_, err := h.botAPI.SetMyCommands(ctx, &telegram.SetMyCommandsParams{
 		Scope: &models.BotCommandScopeChat{
 			ChatID: msg.Chat.ID,

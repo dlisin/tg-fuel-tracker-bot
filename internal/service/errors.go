@@ -1,11 +1,12 @@
 package service
 
-import "errors"
+import (
+	"context"
+	"errors"
+	"log/slog"
+)
 
 var (
-	// User
-	ErrUserHasNoAccessToCar = &ServiceError{err: errors.New("user has no access to the specified car")}
-
 	// Car
 	ErrCarNotFound      = &ServiceError{err: errors.New("car with the specified registration number not found")}
 	ErrCarAlreadyExists = &ServiceError{err: errors.New("car with the specified registration number already exists")}
@@ -28,4 +29,15 @@ func (e *ServiceError) Error() string {
 
 func (e *ServiceError) Unwrap() error {
 	return e.err
+}
+
+func handleServiceError(logger *slog.Logger, ctx context.Context, err error) error {
+	var serviceErr *ServiceError
+	if errors.As(err, &serviceErr) {
+		logger.WarnContext(ctx, "operation aborted", slog.Any("error", err))
+		return err
+	}
+
+	logger.ErrorContext(ctx, "operation failed", slog.Any("error", err))
+	return err
 }

@@ -14,13 +14,13 @@ import (
 
 type SQLiteStorage struct {
 	logger *slog.Logger
-	config config.SQLiteStorageConfig
+	config config.StorageConfig
 
 	db  *sqlx.DB
 	uow *sqliteRepository.SQLiteUnitOfWork
 }
 
-func New(logger *slog.Logger, cfg config.SQLiteStorageConfig) *SQLiteStorage {
+func New(logger *slog.Logger, cfg config.StorageConfig) *SQLiteStorage {
 	logger = logger.With(
 		slog.String("component", "SQLiteStorage"),
 	)
@@ -35,14 +35,14 @@ func New(logger *slog.Logger, cfg config.SQLiteStorageConfig) *SQLiteStorage {
 func (s *SQLiteStorage) Open(ctx context.Context) error {
 	logger := s.logger.With(
 		slog.String("operation", "Open"),
-		slog.String("path", s.config.Path),
+		slog.String("path", s.config.SQLite.Path),
 	)
 
 	logger.InfoContext(ctx, "operation started")
 	err := func() error {
-		connectionString := s.config.Path
-		if s.config.ConnectionParams != "" {
-			connectionString += "?" + s.config.ConnectionParams
+		connectionString := s.config.SQLite.Path
+		if s.config.SQLite.ConnectionParams != "" {
+			connectionString += "?" + s.config.SQLite.ConnectionParams
 		}
 
 		db, err := sqlx.Open("sqlite3", connectionString)

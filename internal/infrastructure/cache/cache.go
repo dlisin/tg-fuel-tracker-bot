@@ -18,7 +18,7 @@ type Cache interface {
 func New(logger *slog.Logger, cfg config.CacheConfig) (Cache, error) {
 	switch cfg.Provider {
 	case config.CacheProviderMemory:
-		return memory.New(logger, cfg.Memory), nil
+		return memory.New(logger, cfg), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported cache provider: %s", cfg.Provider)

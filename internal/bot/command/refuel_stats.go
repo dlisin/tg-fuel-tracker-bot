@@ -10,12 +10,12 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-type refuelStatsCommand struct {
+type RefuelStatsCommand struct {
 	commonCommand
 }
 
-func NewRefuelStatsCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) Handler {
-	return &refuelStatsCommand{
+func NewRefuelStatsCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) *RefuelStatsCommand {
+	return &RefuelStatsCommand{
 		commonCommand: commonCommand{
 			cfg:     cfg,
 			botAPI:  botAPI,
@@ -24,7 +24,7 @@ func NewRefuelStatsCommand(cfg config.BotConfig, botAPI *telegram.Bot, service s
 	}
 }
 
-func (h refuelStatsCommand) Process(ctx context.Context, msg *models.Message) error {
+func (h RefuelStatsCommand) Process(ctx context.Context, msg *models.Message) error {
 	userID := domain.TelegramID(msg.From.ID)
 
 	cmdArgs, err := parseListCommandArgs(parseCommandArgs(msg.Text))
@@ -50,12 +50,12 @@ func (h refuelStatsCommand) Process(ctx context.Context, msg *models.Message) er
 		Params *listCommandArgs
 		Car    *domain.Car
 		Stats  *service.RefuelStats
-		Config config.BotConfig
+		Config config.BotPreferencesConfig
 	}{
 
 		Params: cmdArgs,
 		Car:    car,
 		Stats:  stats,
-		Config: h.cfg,
+		Config: h.cfg.Preferences,
 	})
 }
