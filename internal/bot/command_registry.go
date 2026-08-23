@@ -11,41 +11,47 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-type CommandRegistry struct {
-	logger   *slog.Logger
-	botAPI   *telegram.Bot
-	handlers map[string]command.Handler
+type Command interface {
+	Process(ctx context.Context, msg *models.Message) error
 }
 
-func NewCommandRegistry(logger *slog.Logger, cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) *CommandRegistry {
+type CommandRegistry struct {
+	logger  *slog.Logger
+	cfg     config.BotConfig
+	service service.BotService
+}
+
+func NewCommandRegistry(logger *slog.Logger, cfg config.BotConfig, service service.BotService) *CommandRegistry {
 	return &CommandRegistry{
 		logger: logger.With(
 			slog.String("component", "CommandRegistry"),
 		),
-		botAPI: botAPI,
-		handlers: map[string]command.Handler{
-			"start": command.NewStartCommand(cfg, botAPI, service),
-			// "car-add":       command.NewCarAddCommand(cfg, botAPI, service),
-			"refuel_add":    command.NewRefuelAddCommand(cfg, botAPI, service),
-			"refuel_delete": command.NewRefuelDeleteCommand(cfg, botAPI, service),
-			"refuel_list":   command.NewRefuelListCommand(cfg, botAPI, service),
-			"refuel_stats":  command.NewRefuelStatsCommand(cfg, botAPI, service),
-		},
+		cfg:     cfg,
+		service: service,
 	}
 }
 
-func (r *CommandRegistry) Register() {
-	for commandName, handler := range r.handlers {
-		r.botAPI.RegisterHandler(
-			telegram.HandlerTypeMessageText,
-			commandName,
-			telegram.MatchTypeCommandStartOnly,
-			r.commandHandler(commandName, handler),
-		)
-	}
+func (r *CommandRegistry) Register(botAPI *telegram.Bot) error {
+	r.registerCommand(botAPI, "start", command.NewStartCommand(r.cfg, botAPI, r.service))
+	// r.registerCommand(botAPI, "car_add", command.NewCarAddCommand(r.cfg, botAPI, r.service)
+	r.registerCommand(botAPI, "refuel_add", command.NewRefuelAddCommand(r.cfg, botAPI, r.service))
+	r.registerCommand(botAPI, "refuel_delete", command.NewRefuelDeleteCommand(r.cfg, botAPI, r.service))
+	r.registerCommand(botAPI, "refuel_list", command.NewRefuelListCommand(r.cfg, botAPI, r.service))
+	r.registerCommand(botAPI, "refuel_stats", command.NewRefuelStatsCommand(r.cfg, botAPI, r.service))
+
+	return nil
 }
 
-func (r *CommandRegistry) commandHandler(commandName string, handler command.Handler) telegram.HandlerFunc {
+func (r *CommandRegistry) registerCommand(botAPI *telegram.Bot, commandName string, handler Command) {
+	botAPI.RegisterHandler(
+		telegram.HandlerTypeMessageText,
+		commandName,
+		telegram.MatchTypeCommandStartOnly,
+		r.commandHandler(commandName, handler),
+	)
+}
+
+func (r *CommandRegistry) commandHandler(commandName string, handler Command) telegram.HandlerFunc {
 	return func(ctx context.Context, _ *telegram.Bot, update *models.Update) {
 		msg := update.Message
 		if msg == nil || msg.From == nil {

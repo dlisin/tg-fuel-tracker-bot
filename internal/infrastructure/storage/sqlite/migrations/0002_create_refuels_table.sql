@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE TABLE refuels (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id         INTEGER   NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id         INTEGER   NOT NULL,
     odometer        INTEGER   NOT NULL,
     liters          REAL      NOT NULL,
     price_per_liter REAL      NOT NULL,

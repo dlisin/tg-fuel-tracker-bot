@@ -28,7 +28,7 @@ type RefuelListParams struct {
 }
 
 type CarRepository interface {
-	Get(ctx context.Context, regNum domain.RegNumber) (*domain.Car, error)
+	List(ctx context.Context) ([]domain.Car, error)
 
 	Create(ctx context.Context, car *domain.Car) error
 
@@ -38,7 +38,7 @@ type CarRepository interface {
 }
 
 type UserCarRepository interface {
-	Get(ctx context.Context, userID domain.TelegramID, carID domain.CarID) (*domain.UserCar, error)
+	Get(ctx context.Context, userID domain.TelegramID, regNumber domain.RegNumber) (*domain.Car, error)
 
 	List(ctx context.Context, userID domain.TelegramID) ([]domain.Car, error)
 

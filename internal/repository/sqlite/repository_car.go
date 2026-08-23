@@ -25,41 +25,33 @@ func NewCarRepository(logger *slog.Logger, db sqlx.ExtContext) *SQLiteCarReposit
 	}
 }
 
-func (r *SQLiteCarRepository) Get(ctx context.Context, regNum domain.RegNumber) (*domain.Car, error) {
+func (r *SQLiteCarRepository) List(ctx context.Context) ([]domain.Car, error) {
 	logger := r.logger.With(
-		slog.String("operation", "Get"),
-		slog.String("regNumber", string(regNum)),
+		slog.String("operation", "List"),
 	)
 
-	const query = `SELECT id, reg_number, fuel_type, odometer, created_at, updated_at FROM cars WHERE reg_number = ?`
-	queryArgs := []any{regNum}
+	const query = `SELECT id, reg_number, fuel_type, odometer, created_by, created_at, updated_at FROM cars ORDER BY created_at`
+	logger.DebugContext(ctx, "executing query", slog.String("query", query))
 
-	logger.DebugContext(ctx, "executing query", slog.String("query", query), slog.Any("queryArgs", queryArgs))
-
-	var car domain.Car
-	if err := r.db.QueryRowxContext(ctx, query, queryArgs...).StructScan(&car); err != nil {
+	var cars []domain.Car
+	if err := sqlx.SelectContext(ctx, r.db, &cars, query); err != nil {
 		err = translateError(err)
-		if errors.Is(err, repository.ErrEntityNotFound) {
-			logger.DebugContext(ctx, "entity not found")
-			return nil, err
-		}
-
 		logger.ErrorContext(ctx, "query failed", slog.Any("error", err))
 		return nil, err
 	}
 
-	logger.DebugContext(ctx, "entity found", slog.Uint64("carId", uint64(car.ID)))
-	return &car, nil
+	logger.DebugContext(ctx, "entities found", slog.Int("count", len(cars)))
+	return cars, nil
 }
 
 func (r *SQLiteCarRepository) Create(ctx context.Context, car *domain.Car) error {
 	logger := r.logger.With(
 		slog.String("operation", "Create"),
-		slog.String("regNumber", string(car.RegNumber)),
+		slog.String("regNumber", car.RegNumber.String()),
 	)
 
-	const query = `INSERT INTO cars (reg_number, fuel_type, odometer, created_at, updated_at) VALUES (?, ?, ?, ?, ?) RETURNING id`
-	queryArgs := []any{car.RegNumber, car.FuelType, car.Odometer, car.CreatedAt, car.UpdatedAt}
+	const query = `INSERT INTO cars (reg_number, fuel_type, odometer, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) RETURNING id`
+	queryArgs := []any{car.RegNumber, car.FuelType, car.Odometer, car.CreatedBy, car.CreatedAt, car.UpdatedAt}
 
 	logger.DebugContext(ctx, "executing query", slog.String("query", query), slog.Any("queryArgs", queryArgs))
 
@@ -88,7 +80,7 @@ func (r *SQLiteCarRepository) Update(ctx context.Context, car *domain.Car) error
 	logger := r.logger.With(
 		slog.String("operation", "Update"),
 		slog.Uint64("carId", uint64(car.ID)),
-		slog.String("regNumber", string(car.RegNumber)),
+		slog.String("regNumber", car.RegNumber.String()),
 	)
 
 	const query = `UPDATE cars SET fuel_type = ?, odometer = ?, updated_at = ? WHERE id = ?`
@@ -122,7 +114,7 @@ func (r *SQLiteCarRepository) Delete(ctx context.Context, car *domain.Car) error
 	logger := r.logger.With(
 		slog.String("operation", "Delete"),
 		slog.Uint64("carId", uint64(car.ID)),
-		slog.String("regNumber", string(car.RegNumber)),
+		slog.String("regNumber", car.RegNumber.String()),
 	)
 
 	const query = `DELETE FROM cars WHERE id = ?`

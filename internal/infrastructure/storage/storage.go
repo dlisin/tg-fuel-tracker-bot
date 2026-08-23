@@ -20,7 +20,7 @@ type Storage interface {
 func New(logger *slog.Logger, cfg config.StorageConfig) (Storage, error) {
 	switch cfg.Provider {
 	case config.StorageProviderSQLite:
-		return sqlite.New(logger, cfg.SQLite), nil
+		return sqlite.New(logger, cfg), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported storage provider: %s", cfg.Provider)

@@ -8,14 +8,17 @@ import (
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/infrastructure/logger"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/infrastructure/scheduler"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/infrastructure/storage"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
+	"golang.org/x/sync/errgroup"
 )
 
 type App struct {
-	cfg     config.Config
-	logger  *slog.Logger
-	storage storage.Storage
+	cfg       config.Config
+	logger    *slog.Logger
+	storage   storage.Storage
+	scheduler scheduler.Scheduler
 }
 
 func NewApp() (*App, error) {
@@ -36,10 +39,16 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("unable to create storage: %w", err)
 	}
 
+	appScheduler, err := scheduler.New(appLogger)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create scheduler: %w", err)
+	}
+
 	return &App{
-		cfg:     *cfg,
-		logger:  appLogger,
-		storage: appStorage,
+		cfg:       *cfg,
+		logger:    appLogger,
+		storage:   appStorage,
+		scheduler: appScheduler,
 	}, nil
 }
 
@@ -54,15 +63,28 @@ func (a *App) Run(ctx context.Context) error {
 		}
 	}()
 
-	botService := service.NewBotService(a.logger, a.storage.UnitOfWork())
+	service := service.NewBotService(a.logger, a.storage.UnitOfWork())
+	telegramBot := bot.New(a.logger, a.cfg.Bot, service, a.scheduler)
 
-	telegramBot, err := bot.New(a.logger, a.cfg.Bot, botService)
-	if err != nil {
-		return fmt.Errorf("create bot: %w", err)
-	}
+	group, ctx := errgroup.WithContext(ctx)
+	group.Go(func() error {
+		if err := telegramBot.Run(ctx); err != nil {
+			return fmt.Errorf("unable to run bot: %w", err)
+		}
 
-	if err := telegramBot.Run(ctx); err != nil {
-		return fmt.Errorf("unable to run bot: %w", err)
+		return nil
+	})
+
+	group.Go(func() error {
+		if err := a.scheduler.Run(ctx); err != nil {
+			return fmt.Errorf("unable to run scheduler: %w", err)
+		}
+
+		return nil
+	})
+
+	if err := group.Wait(); err != nil {
+		return err
 	}
 
 	return nil

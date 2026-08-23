@@ -21,10 +21,6 @@ import (
 //go:embed templates/*.tmpl
 var templatesFS embed.FS
 
-type Handler interface {
-	Process(ctx context.Context, msg *models.Message) error
-}
-
 type commonCommand struct {
 	cfg     config.BotConfig
 	botAPI  *telegram.Bot
@@ -87,7 +83,7 @@ func (h *commonCommand) resolveCar(ctx context.Context, userID domain.TelegramID
 
 func (h *commonCommand) handleServiceError(err error) error {
 	switch {
-	case errors.Is(err, service.ErrCarNotFound), errors.Is(err, service.ErrUserHasNoAccessToCar):
+	case errors.Is(err, service.ErrCarNotFound):
 		return errors.New("⚠️ Автомобиль не найден")
 
 	case errors.Is(err, service.ErrCarAlreadyExists):

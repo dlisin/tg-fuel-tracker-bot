@@ -11,12 +11,12 @@ import (
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 )
 
-type refuelDeleteCommand struct {
+type RefuelDeleteCommand struct {
 	commonCommand
 }
 
-func NewRefuelDeleteCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) Handler {
-	return &refuelDeleteCommand{
+func NewRefuelDeleteCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) *RefuelDeleteCommand {
+	return &RefuelDeleteCommand{
 		commonCommand: commonCommand{
 			cfg:     cfg,
 			botAPI:  botAPI,
@@ -25,7 +25,7 @@ func NewRefuelDeleteCommand(cfg config.BotConfig, botAPI *telegram.Bot, service 
 	}
 }
 
-func (h *refuelDeleteCommand) Process(ctx context.Context, msg *models.Message) error {
+func (h *RefuelDeleteCommand) Process(ctx context.Context, msg *models.Message) error {
 	userID := domain.TelegramID(msg.From.ID)
 
 	cmdArgs, err := parseRefuelDeleteCommandArgs(
@@ -52,11 +52,11 @@ func (h *refuelDeleteCommand) Process(ctx context.Context, msg *models.Message) 
 		struct {
 			Car    *domain.Car
 			Refuel *domain.Refuel
-			Config config.BotConfig
+			Config config.BotPreferencesConfig
 		}{
 			Car:    car,
 			Refuel: refuel,
-			Config: h.cfg,
+			Config: h.cfg.Preferences,
 		},
 	)
 }

@@ -10,13 +10,13 @@ import (
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/repository"
 )
 
-type BotServiceImpl struct {
+type botServiceImpl struct {
 	logger *slog.Logger
 	uow    repository.UnitOfWork
 }
 
-func NewBotService(logger *slog.Logger, uow repository.UnitOfWork) *BotServiceImpl {
-	return &BotServiceImpl{
+func NewBotService(logger *slog.Logger, uow repository.UnitOfWork) *botServiceImpl {
+	return &botServiceImpl{
 		logger: logger.With(
 			slog.String("component", "BotService"),
 		),
@@ -24,11 +24,11 @@ func NewBotService(logger *slog.Logger, uow repository.UnitOfWork) *BotServiceIm
 	}
 }
 
-func (s *BotServiceImpl) AddCar(ctx context.Context, userID domain.TelegramID, params AddCarParams) (*domain.Car, error) {
+func (s *botServiceImpl) AddCar(ctx context.Context, userID domain.TelegramID, params AddCarParams) (*domain.Car, error) {
 	logger := s.logger.With(
 		slog.String("operation", "AddCar"),
 		slog.Uint64("userId", uint64(userID)),
-		slog.String("regNumber", string(params.RegNumber)),
+		slog.String("regNumber", params.RegNumber.String()),
 	)
 
 	logger.InfoContext(ctx, "operation started")
@@ -37,6 +37,7 @@ func (s *BotServiceImpl) AddCar(ctx context.Context, userID domain.TelegramID, p
 	car := &domain.Car{
 		RegNumber: params.RegNumber,
 		FuelType:  params.FuelType,
+		CreatedBy: userID,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -58,7 +59,6 @@ func (s *BotServiceImpl) AddCar(ctx context.Context, userID domain.TelegramID, p
 		userCar := &domain.UserCar{
 			UserID:    userID,
 			CarID:     car.ID,
-			IsOwner:   true,
 			CreatedAt: now,
 		}
 		if err := tx.UserCarRepository().Create(ctx, userCar); err != nil {
@@ -76,7 +76,7 @@ func (s *BotServiceImpl) AddCar(ctx context.Context, userID domain.TelegramID, p
 	return car, nil
 }
 
-func (s *BotServiceImpl) GetUserCars(ctx context.Context, userID domain.TelegramID) ([]domain.Car, error) {
+func (s *botServiceImpl) GetUserCars(ctx context.Context, userID domain.TelegramID) ([]domain.Car, error) {
 	logger := s.logger.With(
 		slog.String("operation", "GetUserCars"),
 		slog.Uint64("userId", uint64(userID)),
@@ -99,11 +99,33 @@ func (s *BotServiceImpl) GetUserCars(ctx context.Context, userID domain.Telegram
 	return cars, nil
 }
 
-func (s *BotServiceImpl) AddRefuel(ctx context.Context, userID domain.TelegramID, params AddRefuelParams) (*domain.Refuel, error) {
+func (s *botServiceImpl) GetAllCars(ctx context.Context) ([]domain.Car, error) {
+	logger := s.logger.With(
+		slog.String("operation", "GetAllCars"),
+	)
+
+	logger.InfoContext(ctx, "operation started")
+
+	var cars []domain.Car
+	err := repository.WithTransaction(ctx, s.uow, func(tx repository.Transaction) error {
+		var err error
+		cars, err = tx.CarRepository().List(ctx)
+		return err
+	})
+	if err != nil {
+		return nil, handleServiceError(logger, ctx, err)
+	}
+
+	logger.InfoContext(ctx, "operation completed", slog.Int("carsCount", len(cars)))
+
+	return cars, nil
+}
+
+func (s *botServiceImpl) AddRefuel(ctx context.Context, userID domain.TelegramID, params AddRefuelParams) (*domain.Refuel, error) {
 	logger := s.logger.With(
 		slog.String("operation", "AddRefuel"),
 		slog.Uint64("userId", uint64(userID)),
-		slog.String("regNumber", string(params.RegNumber)),
+		slog.String("regNumber", params.RegNumber.String()),
 		slog.Uint64("odometer", uint64(params.Odometer)),
 		slog.Float64("liters", params.Liters),
 		slog.Float64("priceTotal", params.PriceTotal),
@@ -114,7 +136,7 @@ func (s *BotServiceImpl) AddRefuel(ctx context.Context, userID domain.TelegramID
 	now := time.Now()
 	var refuel *domain.Refuel
 	err := repository.WithTransaction(ctx, s.uow, func(tx repository.Transaction) error {
-		car, err := tx.CarRepository().Get(ctx, params.RegNumber)
+		car, err := tx.UserCarRepository().Get(ctx, userID, params.RegNumber)
 		if err != nil {
 			if errors.Is(err, repository.ErrEntityNotFound) {
 				return ErrCarNotFound
@@ -123,15 +145,6 @@ func (s *BotServiceImpl) AddRefuel(ctx context.Context, userID domain.TelegramID
 			return err
 		}
 		logger.DebugContext(ctx, "car found", slog.Uint64("carId", uint64(car.ID)))
-
-		if _, err := tx.UserCarRepository().Get(ctx, userID, car.ID); err != nil {
-			if errors.Is(err, repository.ErrEntityNotFound) {
-				return ErrUserHasNoAccessToCar
-			}
-
-			return err
-		}
-		logger.DebugContext(ctx, "car access verified")
 
 		if params.Odometer <= car.Odometer {
 			return ErrRefuelOdometerTooLow
@@ -169,11 +182,11 @@ func (s *BotServiceImpl) AddRefuel(ctx context.Context, userID domain.TelegramID
 	return refuel, nil
 }
 
-func (s *BotServiceImpl) DeleteRefuel(ctx context.Context, userID domain.TelegramID, params DeleteRefuelParams) (*domain.Refuel, error) {
+func (s *botServiceImpl) DeleteRefuel(ctx context.Context, userID domain.TelegramID, params DeleteRefuelParams) (*domain.Refuel, error) {
 	logger := s.logger.With(
 		slog.String("operation", "DeleteRefuel"),
 		slog.Uint64("userId", uint64(userID)),
-		slog.String("regNumber", string(params.RegNumber)),
+		slog.String("regNumber", params.RegNumber.String()),
 		slog.Uint64("odometer", uint64(params.Odometer)),
 	)
 
@@ -181,7 +194,7 @@ func (s *BotServiceImpl) DeleteRefuel(ctx context.Context, userID domain.Telegra
 
 	var refuel *domain.Refuel
 	err := repository.WithTransaction(ctx, s.uow, func(tx repository.Transaction) error {
-		car, err := tx.CarRepository().Get(ctx, params.RegNumber)
+		car, err := tx.UserCarRepository().Get(ctx, userID, params.RegNumber)
 		if err != nil {
 			if errors.Is(err, repository.ErrEntityNotFound) {
 				return ErrCarNotFound
@@ -190,15 +203,6 @@ func (s *BotServiceImpl) DeleteRefuel(ctx context.Context, userID domain.Telegra
 			return err
 		}
 		logger.DebugContext(ctx, "car found", slog.Uint64("carId", uint64(car.ID)))
-
-		if _, err := tx.UserCarRepository().Get(ctx, userID, car.ID); err != nil {
-			if errors.Is(err, repository.ErrEntityNotFound) {
-				return ErrUserHasNoAccessToCar
-			}
-
-			return err
-		}
-		logger.DebugContext(ctx, "car access verified")
 
 		refuel, err = tx.RefuelRepository().Get(ctx, car.ID, params.Odometer)
 		if err != nil {
@@ -253,11 +257,11 @@ func (s *BotServiceImpl) DeleteRefuel(ctx context.Context, userID domain.Telegra
 	return refuel, nil
 }
 
-func (s *BotServiceImpl) GetRefuelsForPeriod(ctx context.Context, userID domain.TelegramID, params GetRefuelsForPeriodParams) ([]domain.Refuel, error) {
+func (s *botServiceImpl) GetRefuelsForPeriod(ctx context.Context, userID domain.TelegramID, params GetRefuelsForPeriodParams) ([]domain.Refuel, error) {
 	logger := s.logger.With(
 		slog.String("operation", "GetRefuelsForPeriod"),
 		slog.Uint64("userId", uint64(userID)),
-		slog.String("regNumber", string(params.RegNumber)),
+		slog.String("regNumber", params.RegNumber.String()),
 		slog.Time("from", params.From),
 		slog.Time("to", params.To),
 	)
@@ -276,11 +280,11 @@ func (s *BotServiceImpl) GetRefuelsForPeriod(ctx context.Context, userID domain.
 	return refuels, nil
 }
 
-func (s *BotServiceImpl) GetRefuelStatsForPeriod(ctx context.Context, userID domain.TelegramID, params GetRefuelsForPeriodParams) (*RefuelStats, error) {
+func (s *botServiceImpl) GetRefuelStatsForPeriod(ctx context.Context, userID domain.TelegramID, params GetRefuelsForPeriodParams) (*RefuelStats, error) {
 	logger := s.logger.With(
 		slog.String("operation", "GetRefuelStatsForPeriod"),
 		slog.Uint64("userId", uint64(userID)),
-		slog.String("regNumber", string(params.RegNumber)),
+		slog.String("regNumber", params.RegNumber.String()),
 		slog.Time("from", params.From),
 		slog.Time("to", params.To),
 	)
@@ -303,10 +307,8 @@ func (s *BotServiceImpl) GetRefuelStatsForPeriod(ctx context.Context, userID dom
 		}
 		logger.DebugContext(ctx, "refuel stats calculated",
 			slog.Int("entries", stats.Entries),
-			slog.Uint64("totalDistance", uint64(stats.TotalDistance)),
 			slog.Float64("totalLiters", stats.TotalLiters),
 			slog.Float64("totalCost", stats.TotalCost),
-			slog.Float64("fuelConsumption", stats.FuelConsumption),
 		)
 
 		return nil
@@ -319,11 +321,11 @@ func (s *BotServiceImpl) GetRefuelStatsForPeriod(ctx context.Context, userID dom
 	return stats, nil
 }
 
-func (s *BotServiceImpl) GetLatestRefuelStats(ctx context.Context, userID domain.TelegramID, regNumber domain.RegNumber) (*RefuelStats, error) {
+func (s *botServiceImpl) GetLatestRefuelStats(ctx context.Context, userID domain.TelegramID, regNumber domain.RegNumber) (*RefuelStats, error) {
 	logger := s.logger.With(
 		slog.String("operation", "GetLatestRefuelStats"),
 		slog.Uint64("userId", uint64(userID)),
-		slog.String("regNumber", string(regNumber)),
+		slog.String("regNumber", regNumber.String()),
 	)
 
 	logger.InfoContext(ctx, "operation started")
@@ -345,10 +347,8 @@ func (s *BotServiceImpl) GetLatestRefuelStats(ctx context.Context, userID domain
 
 		logger.DebugContext(ctx, "refuel stats calculated",
 			slog.Int("entries", stats.Entries),
-			slog.Uint64("totalDistance", uint64(stats.TotalDistance)),
 			slog.Float64("totalLiters", stats.TotalLiters),
 			slog.Float64("totalCost", stats.TotalCost),
-			slog.Float64("fuelConsumption", stats.FuelConsumption),
 		)
 
 		return nil
@@ -361,26 +361,18 @@ func (s *BotServiceImpl) GetLatestRefuelStats(ctx context.Context, userID domain
 	return stats, nil
 }
 
-func (s *BotServiceImpl) listRefuels(logger *slog.Logger, ctx context.Context, userID domain.TelegramID, regNumber domain.RegNumber, params repository.RefuelListParams) ([]domain.Refuel, error) {
+func (s *botServiceImpl) listRefuels(logger *slog.Logger, ctx context.Context, userID domain.TelegramID, regNumber domain.RegNumber, params repository.RefuelListParams) ([]domain.Refuel, error) {
 	var refuels []domain.Refuel
 	err := repository.WithTransaction(ctx, s.uow, func(tx repository.Transaction) error {
-		car, err := tx.CarRepository().Get(ctx, regNumber)
+		car, err := tx.UserCarRepository().Get(ctx, userID, regNumber)
 		if err != nil {
 			if errors.Is(err, repository.ErrEntityNotFound) {
 				return ErrCarNotFound
 			}
+
 			return err
 		}
 		logger.DebugContext(ctx, "car found", slog.Uint64("carId", uint64(car.ID)))
-
-		if _, err := tx.UserCarRepository().Get(ctx, userID, car.ID); err != nil {
-			if errors.Is(err, repository.ErrEntityNotFound) {
-				return ErrUserHasNoAccessToCar
-			}
-
-			return err
-		}
-		logger.DebugContext(ctx, "car access verified")
 
 		refuels, err = tx.RefuelRepository().List(ctx, car.ID, params)
 		if err != nil {
@@ -395,15 +387,4 @@ func (s *BotServiceImpl) listRefuels(logger *slog.Logger, ctx context.Context, u
 	}
 
 	return refuels, nil
-}
-
-func handleServiceError(logger *slog.Logger, ctx context.Context, err error) error {
-	var serviceErr *ServiceError
-	if errors.As(err, &serviceErr) {
-		logger.WarnContext(ctx, "operation aborted", slog.Any("error", err))
-		return err
-	}
-
-	logger.ErrorContext(ctx, "operation failed", slog.Any("error", err))
-	return err
 }

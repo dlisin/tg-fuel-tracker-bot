@@ -1,6 +1,8 @@
 package repository
 
-import "context"
+import (
+	"context"
+)
 
 type UnitOfWork interface {
 	Begin(ctx context.Context) (Transaction, error)

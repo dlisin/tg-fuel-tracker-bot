@@ -25,7 +25,7 @@ type MemoryCache struct {
 	ttl     time.Duration
 }
 
-func New(logger *slog.Logger, cfg config.MemoryCacheConfig) *MemoryCache {
+func New(logger *slog.Logger, cfg config.CacheConfig) *MemoryCache {
 	return &MemoryCache{
 		logger: logger.With(
 			slog.String("component", "MemoryCache"),

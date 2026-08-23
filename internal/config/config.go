@@ -31,29 +31,41 @@ type Config struct {
 type BotConfig struct {
 	Token string `yaml:"token" env:"TOKEN" required:"true"`
 
+	Preferences BotPreferencesConfig `yaml:"preferences"`
+	Tasks       BotTasksConfig       `yaml:"tasks"`
+}
+
+type BotPreferencesConfig struct {
 	DefaultCurrency    string   `yaml:"defaultCurrency" default:"₽"`
 	DefaultFuelType    string   `yaml:"defaultFuelType" default:"ДТ"`
 	AvailableFuelTypes []string `yaml:"availableFuelTypes" default:"АИ-92,АИ-95,АИ-100,ДТ"`
 }
 
+type BotTasksConfig struct {
+	MonthlyStats GeneralTaskConfig `yaml:"monthlyStats"`
+}
+
+type GeneralTaskConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	Schedule string `yaml:"schedule"`
+}
+
 type StorageConfig struct {
-	Provider StorageProvider     `yaml:"provider" env:"STORAGE_PROVIDER" default:"sqlite"`
-	SQLite   SQLiteStorageConfig `yaml:"sqlite"`
+	Provider       StorageProvider `yaml:"provider" env:"STORAGE_PROVIDER" default:"sqlite"`
+	MaxConnections int             `yaml:"maxConnections" env:"STORAGE_MAX_CONNECTIONS"`
+
+	SQLite SQLiteStorageConfig `yaml:"sqlite"`
 }
 
 type SQLiteStorageConfig struct {
-	Path             string `yaml:"path" env:"STORAGE_PATH" default:"./fuelbot.db"`
-	MaxConnections   int    `yaml:"maxConnections" env:"STORAGE_MAX_CONNECTIONS"`
+	Path string `yaml:"path" env:"STORAGE_PATH" default:"./fuelbot.db"`
+
 	ConnectionParams string `yaml:"connectionParams" env:"STORAGE_CONNECTION_PARAMS"`
 }
 
 type CacheConfig struct {
 	Provider CacheProviderConfig `yaml:"provider" env:"CACHE_PROVIDER" default:"memory"`
-	Memory   MemoryCacheConfig   `yaml:"memory"`
-}
-
-type MemoryCacheConfig struct {
-	TTL time.Duration `yaml:"ttl" env:"CACHE_TTL" default:"30m"`
+	TTL      time.Duration       `yaml:"ttl" env:"CACHE_TTL" default:"30m"`
 }
 
 type LogConfig struct {
