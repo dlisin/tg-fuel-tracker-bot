@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
+	"github.com/CloudyKit/jet/v6"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 	telegram "github.com/go-telegram/bot"
@@ -17,13 +17,12 @@ type MonthlyStatsTask struct {
 	commonTask
 }
 
-func NewMonthlyStatsTask(logger *slog.Logger, cfg config.BotPreferencesConfig, botAPI *telegram.Bot, service service.BotService) *MonthlyStatsTask {
+func NewMonthlyStatsTask(logger *slog.Logger, botAPI *telegram.Bot, service service.BotService) *MonthlyStatsTask {
 	return &MonthlyStatsTask{
 		commonTask: commonTask{
 			logger: logger.With(
 				slog.String("component", "MonthlyStatsTask"),
 			),
-			cfg:     cfg,
 			botAPI:  botAPI,
 			service: service,
 		},
@@ -73,17 +72,10 @@ func (t *MonthlyStatsTask) processCar(ctx context.Context, car domain.Car, from 
 		return err
 	}
 
-	return t.sendMessageFromTemplate(ctx, int64(car.CreatedBy), "templates/monthly_stats.tmpl", struct {
-		Label  string
-		Car    domain.Car
-		Stats  *service.RefuelStats
-		Config config.BotPreferencesConfig
-	}{
-		Label:  getLabel(from),
-		Car:    car,
-		Stats:  stats,
-		Config: t.cfg,
-	})
+	return t.sendMessageFromTemplate(ctx, int64(car.CreatedBy), "task/monthly_stats.jet", jet.VarMap{}.
+		Set("Label", getLabel(from)).
+		Set("Car", car).
+		Set("Stats", stats))
 }
 
 func previousMonthPeriod(now time.Time) (time.Time, time.Time) {

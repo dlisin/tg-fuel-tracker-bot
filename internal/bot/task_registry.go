@@ -13,12 +13,12 @@ import (
 
 type TaskRegistry struct {
 	logger    *slog.Logger
-	cfg       config.BotConfig
+	cfg       config.BotTasksConfig
 	service   service.BotService
 	scheduler scheduler.Scheduler
 }
 
-func NewTaskRegistry(logger *slog.Logger, cfg config.BotConfig, service service.BotService, scheduler scheduler.Scheduler) *TaskRegistry {
+func NewTaskRegistry(logger *slog.Logger, cfg config.BotTasksConfig, service service.BotService, scheduler scheduler.Scheduler) *TaskRegistry {
 	return &TaskRegistry{
 		logger: logger.With(
 			slog.String("component", "TaskRegistry"),
@@ -30,9 +30,9 @@ func NewTaskRegistry(logger *slog.Logger, cfg config.BotConfig, service service.
 }
 
 func (r *TaskRegistry) Register(botAPI *telegram.Bot) error {
-	if r.cfg.Tasks.MonthlyStats.Enabled {
-		task := task.NewMonthlyStatsTask(r.logger, r.cfg.Preferences, botAPI, r.service)
-		if err := r.scheduler.Schedule("monthly-stats", r.cfg.Tasks.MonthlyStats.Schedule, task); err != nil {
+	if r.cfg.MonthlyStats.Enabled {
+		task := task.NewMonthlyStatsTask(r.logger, botAPI, r.service)
+		if err := r.scheduler.Schedule("monthly-stats", r.cfg.MonthlyStats.Schedule, task); err != nil {
 			return fmt.Errorf("unable to schedule monthly-stats task: %w", err)
 		}
 	}

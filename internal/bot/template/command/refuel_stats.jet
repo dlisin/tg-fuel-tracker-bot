@@ -1,0 +1,14 @@
+{{ if Stats }}
+📊 *Стастистика {{ Params.Label }}:*
+
+• Госномер: _{{ Car.RegNumber }}_
+• Количество заправок: {{ Stats.Entries }}
+{{- if Stats.Consumption }}
+• Пробег: _{{ formatDistance(Stats.Consumption.TotalDistance) }}_
+• Средний расход: _{{ formatFuelConsumption(Stats.Consumption.FuelConsumption) }}_
+{{- end }}
+• Цена/л: _{{ formatMoney(Stats.Price.FirstLast.From) }} → {{ formatMoney(Stats.Price.FirstLast.To) }}_ ({{ formatMoneyDelta(Stats.Price.FirstLast.Delta) }})
+• Общая сумма: _{{ formatMoney(Stats.TotalCost) }}_
+{{ else }}
+ℹ️ Нет заправок в выбранном периоде.
+{{ end }}

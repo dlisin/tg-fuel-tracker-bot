@@ -6,7 +6,6 @@ import (
 	telegram "github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 )
 
@@ -14,10 +13,9 @@ type StartCommand struct {
 	commonCommand
 }
 
-func NewStartCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) *StartCommand {
+func NewStartCommand(botAPI *telegram.Bot, service service.BotService) *StartCommand {
 	return &StartCommand{
 		commonCommand: commonCommand{
-			cfg:     cfg,
 			botAPI:  botAPI,
 			service: service,
 		},
@@ -56,5 +54,5 @@ func (h *StartCommand) Process(ctx context.Context, msg *models.Message) error {
 		return err
 	}
 
-	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "templates/start.tmpl", nil)
+	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "command/start.jet", nil)
 }

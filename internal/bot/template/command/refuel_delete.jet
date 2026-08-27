@@ -1,0 +1,8 @@
+🗑️ *Заправка удалена:*
+
+• Дата: _{{ Refuel.CreatedAt.Format("2006-01-02") }}_
+• Госномер: _{{ Car.RegNumber }}_
+• Пробег: _{{ formatDistance(Refuel.Odometer) }}_
+• Топливо: _{{ formatLiters(Refuel.Liters) }}_
+• Цена/л: _{{ formatMoney(Refuel.PricePerLiter) }}_
+• Сумма чека: _{{ formatMoney(Refuel.PriceTotal) }}_

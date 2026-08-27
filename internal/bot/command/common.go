@@ -1,45 +1,33 @@
 package command
 
 import (
-	"bytes"
 	"context"
-	"embed"
 	"errors"
 	"fmt"
 	"strings"
-	"text/template"
 	"unicode"
 
+	"github.com/CloudyKit/jet/v6"
 	telegram "github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/template"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 )
 
-//go:embed templates/*.tmpl
-var templatesFS embed.FS
-
 type commonCommand struct {
-	cfg     config.BotConfig
 	botAPI  *telegram.Bot
 	service service.BotService
 }
 
-func (h *commonCommand) sendMessageFromTemplate(ctx context.Context, chatID int64, templateName string, data interface{}) error {
-	t, err := template.ParseFS(templatesFS, templateName)
+func (h *commonCommand) sendMessageFromTemplate(ctx context.Context, chatID int64, templateName string, variables jet.VarMap) error {
+	msgText, err := template.Render(templateName, variables)
 	if err != nil {
 		return err
 	}
 
-	out := new(bytes.Buffer)
-	err = t.Execute(out, data)
-	if err != nil {
-		return err
-	}
-
-	return h.sendMessage(ctx, chatID, out.String())
+	return h.sendMessage(ctx, chatID, msgText)
 }
 
 func (h *commonCommand) sendMessage(ctx context.Context, chatID int64, msgText string) error {

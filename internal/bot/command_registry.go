@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/bot/command"
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 	telegram "github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -17,27 +16,25 @@ type Command interface {
 
 type CommandRegistry struct {
 	logger  *slog.Logger
-	cfg     config.BotConfig
 	service service.BotService
 }
 
-func NewCommandRegistry(logger *slog.Logger, cfg config.BotConfig, service service.BotService) *CommandRegistry {
+func NewCommandRegistry(logger *slog.Logger, service service.BotService) *CommandRegistry {
 	return &CommandRegistry{
 		logger: logger.With(
 			slog.String("component", "CommandRegistry"),
 		),
-		cfg:     cfg,
 		service: service,
 	}
 }
 
 func (r *CommandRegistry) Register(botAPI *telegram.Bot) error {
-	r.registerCommand(botAPI, "start", command.NewStartCommand(r.cfg, botAPI, r.service))
-	// r.registerCommand(botAPI, "car_add", command.NewCarAddCommand(r.cfg, botAPI, r.service)
-	r.registerCommand(botAPI, "refuel_add", command.NewRefuelAddCommand(r.cfg, botAPI, r.service))
-	r.registerCommand(botAPI, "refuel_delete", command.NewRefuelDeleteCommand(r.cfg, botAPI, r.service))
-	r.registerCommand(botAPI, "refuel_list", command.NewRefuelListCommand(r.cfg, botAPI, r.service))
-	r.registerCommand(botAPI, "refuel_stats", command.NewRefuelStatsCommand(r.cfg, botAPI, r.service))
+	r.registerCommand(botAPI, "start", command.NewStartCommand(botAPI, r.service))
+	// r.registerCommand(botAPI, "car_add", command.NewCarAddCommand(botAPI, r.service)
+	r.registerCommand(botAPI, "refuel_add", command.NewRefuelAddCommand(botAPI, r.service))
+	r.registerCommand(botAPI, "refuel_delete", command.NewRefuelDeleteCommand(botAPI, r.service))
+	r.registerCommand(botAPI, "refuel_list", command.NewRefuelListCommand(botAPI, r.service))
+	r.registerCommand(botAPI, "refuel_stats", command.NewRefuelStatsCommand(botAPI, r.service))
 
 	return nil
 }

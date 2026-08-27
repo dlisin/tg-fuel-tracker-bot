@@ -1,0 +1,12 @@
+{{ if Refuels }}
+📝 *Список заправок {{ Params.Label }}:*
+{{ range Refuels }}
+• Дата: _{{ .CreatedAt.Format("2006-01-02") }}_
+• Пробег: _{{ formatDistance(.Odometer) }}_
+• Топливо: _{{ formatLiters(.Liters) }}_
+• Цена/л: _{{ formatMoney(.PricePerLiter) }}_
+• Сумма чека: _{{ formatMoney(.PriceTotal) }}_
+{{ end }}
+{{ else }}
+ℹ️ Нет заправок в выбранном периоде.
+{{ end }}
