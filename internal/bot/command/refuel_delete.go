@@ -3,10 +3,10 @@ package command
 import (
 	"context"
 
+	"github.com/CloudyKit/jet/v6"
 	telegram "github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 )
@@ -15,10 +15,9 @@ type RefuelDeleteCommand struct {
 	commonCommand
 }
 
-func NewRefuelDeleteCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) *RefuelDeleteCommand {
+func NewRefuelDeleteCommand(botAPI *telegram.Bot, service service.BotService) *RefuelDeleteCommand {
 	return &RefuelDeleteCommand{
 		commonCommand: commonCommand{
-			cfg:     cfg,
 			botAPI:  botAPI,
 			service: service,
 		},
@@ -48,15 +47,9 @@ func (h *RefuelDeleteCommand) Process(ctx context.Context, msg *models.Message) 
 		return h.sendMessage(ctx, msg.Chat.ID, h.handleServiceError(err).Error())
 	}
 
-	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "templates/refuel_delete.tmpl",
-		struct {
-			Car    *domain.Car
-			Refuel *domain.Refuel
-			Config config.BotPreferencesConfig
-		}{
-			Car:    car,
-			Refuel: refuel,
-			Config: h.cfg.Preferences,
-		},
-	)
+	variables := jet.VarMap{}
+	variables.Set("Car", car)
+	variables.Set("Refuel", refuel)
+
+	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "command/refuel_delete.jet", variables)
 }

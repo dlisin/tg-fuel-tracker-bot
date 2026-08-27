@@ -3,7 +3,7 @@ package command
 import (
 	"context"
 
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
+	"github.com/CloudyKit/jet/v6"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 	telegram "github.com/go-telegram/bot"
@@ -14,10 +14,9 @@ type RefuelListCommand struct {
 	commonCommand
 }
 
-func NewRefuelListCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) *RefuelListCommand {
+func NewRefuelListCommand(botAPI *telegram.Bot, service service.BotService) *RefuelListCommand {
 	return &RefuelListCommand{
 		commonCommand: commonCommand{
-			cfg:     cfg,
 			botAPI:  botAPI,
 			service: service,
 		},
@@ -46,15 +45,10 @@ func (h *RefuelListCommand) Process(ctx context.Context, msg *models.Message) er
 		return h.sendMessage(ctx, msg.Chat.ID, h.handleServiceError(err).Error())
 	}
 
-	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "templates/refuel_list.tmpl", struct {
-		Params  *listCommandArgs
-		Car     *domain.Car
-		Refuels []domain.Refuel
-		Config  config.BotPreferencesConfig
-	}{
-		Params:  cmdArgs,
-		Car:     car,
-		Refuels: refuels,
-		Config:  h.cfg.Preferences,
-	})
+	variables := jet.VarMap{}
+	variables.Set("Params", cmdArgs)
+	variables.Set("Car", car)
+	variables.Set("Refuels", refuels)
+
+	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "command/refuel_list.jet", variables)
 }

@@ -3,10 +3,10 @@ package command
 import (
 	"context"
 
+	"github.com/CloudyKit/jet/v6"
 	telegram "github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
 )
@@ -15,10 +15,9 @@ type RefuelAddCommand struct {
 	commonCommand
 }
 
-func NewRefuelAddCommand(cfg config.BotConfig, botAPI *telegram.Bot, service service.BotService) *RefuelAddCommand {
+func NewRefuelAddCommand(botAPI *telegram.Bot, service service.BotService) *RefuelAddCommand {
 	return &RefuelAddCommand{
 		commonCommand: commonCommand{
-			cfg:     cfg,
 			botAPI:  botAPI,
 			service: service,
 		},
@@ -50,15 +49,10 @@ func (h *RefuelAddCommand) Process(ctx context.Context, msg *models.Message) err
 
 	stats, _ := h.service.GetLatestRefuelStats(ctx, userID, car.RegNumber)
 
-	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "templates/refuel_add.tmpl", struct {
-		Car    *domain.Car
-		Refuel *domain.Refuel
-		Stats  *service.RefuelStats
-		Config config.BotPreferencesConfig
-	}{
-		Car:    car,
-		Refuel: refuel,
-		Stats:  stats,
-		Config: h.cfg.Preferences,
-	})
+	variables := jet.VarMap{}
+	variables.Set("Car", car)
+	variables.Set("Refuel", refuel)
+	variables.Set("Stats", stats)
+
+	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "command/refuel_add.jet", variables)
 }

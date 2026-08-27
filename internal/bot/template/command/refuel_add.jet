@@ -1,0 +1,13 @@
+⛽ *Заправка добавлена:*
+
+• Госномер: _{{ Car.RegNumber }}_
+• Пробег: _{{ formatDistance(Refuel.Odometer) }}_
+• Топливо: _{{ formatLiters(Refuel.Liters) }}_
+• Цена/л: _{{ formatMoney(Refuel.PricePerLiter) }}_
+{{ if Stats && Stats.Consumption }}
+📊 *Стастистика с последней заправки:*
+
+• Пробег: _{{ formatDistance(Stats.Consumption.TotalDistance) }}_
+• Средний расход: _{{ formatFuelConsumption(Stats.Consumption.FuelConsumption) }}_
+• Цена/л: _{{ formatMoney(Stats.Price.FirstLast.From) }} → {{ formatMoney(Stats.Price.FirstLast.To) }}_ ({{ formatMoneyDelta(Stats.Price.FirstLast.Delta) }})
+{{ end }}

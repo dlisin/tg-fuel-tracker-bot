@@ -23,8 +23,8 @@ func New(logger *slog.Logger, cfg config.BotConfig, service service.BotService, 
 	return &Bot{
 		logger:          logger,
 		cfg:             cfg,
-		commandRegistry: NewCommandRegistry(logger, cfg, service),
-		taskRegistry:    NewTaskRegistry(logger, cfg, service, scheduler),
+		commandRegistry: NewCommandRegistry(logger, service),
+		taskRegistry:    NewTaskRegistry(logger, cfg.Tasks, service, scheduler),
 	}
 }
 
