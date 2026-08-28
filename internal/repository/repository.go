@@ -23,8 +23,14 @@ type RefuelListParams struct {
 	From time.Time
 	To   time.Time
 
-	Limit int
+	Limit uint64
 	Order SortOrder
+}
+
+type NotificationListParams struct {
+	Status domain.NotificationStatus
+	Limit  uint64
+	Order  SortOrder
 }
 
 type CarRepository interface {
@@ -58,4 +64,14 @@ type RefuelRepository interface {
 	Create(ctx context.Context, refuel *domain.Refuel) error
 
 	Delete(ctx context.Context, refuel *domain.Refuel) error
+}
+
+type NotificationRepository interface {
+	Get(ctx context.Context, key domain.NotificationKey, userID domain.TelegramID) (*domain.Notification, error)
+
+	List(ctx context.Context, params NotificationListParams) ([]domain.Notification, error)
+
+	Create(ctx context.Context, notification *domain.Notification) error
+
+	Update(ctx context.Context, notification *domain.Notification) error
 }

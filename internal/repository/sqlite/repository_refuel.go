@@ -59,7 +59,7 @@ func (r *SQLiteRefuelRepository) List(ctx context.Context, carID domain.CarID, p
 		slog.Uint64("carId", uint64(carID)),
 		slog.Time("from", params.From),
 		slog.Time("to", params.To),
-		slog.Int("limit", params.Limit),
+		slog.Uint64("limit", params.Limit),
 	)
 
 	query := `SELECT id, car_id, odometer, liters, price_per_liter, price_total, created_at, created_by FROM refuels WHERE car_id = ?`

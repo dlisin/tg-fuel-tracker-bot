@@ -19,8 +19,12 @@ type commonTask struct {
 	service service.BotService
 }
 
+func (h *commonTask) renderTemplate(templateName string, variables jet.VarMap) (string, error) {
+	return template.Render(templateName, variables)
+}
+
 func (h *commonTask) sendMessageFromTemplate(ctx context.Context, chatID int64, templateName string, variables jet.VarMap) error {
-	msgText, err := template.Render(templateName, variables)
+	msgText, err := h.renderTemplate(templateName, variables)
 	if err != nil {
 		return err
 	}

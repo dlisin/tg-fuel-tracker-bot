@@ -60,3 +60,7 @@ func (t *SQLiteTransaction) RefuelRepository() repository.RefuelRepository {
 func (t *SQLiteTransaction) UserCarInviteRepository() repository.UserCarInviteRepository {
 	return NewUserCarInviteRepository(t.logger, t.tx)
 }
+
+func (t *SQLiteTransaction) NotificationRepository() repository.NotificationRepository {
+	return NewNotificationRepository(t.logger, t.tx)
+}

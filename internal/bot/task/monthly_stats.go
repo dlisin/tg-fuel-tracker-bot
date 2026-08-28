@@ -72,10 +72,20 @@ func (t *MonthlyStatsTask) processCar(ctx context.Context, car domain.Car, from 
 		return err
 	}
 
-	return t.sendMessageFromTemplate(ctx, int64(car.CreatedBy), "task/monthly_stats.jet", jet.VarMap{}.
+	text, err := t.renderTemplate("task/monthly_stats.jet", jet.VarMap{}.
 		Set("Label", getLabel(from)).
 		Set("Car", car).
-		Set("Stats", stats))
+		Set("Stats", stats),
+	)
+	if err != nil {
+		return err
+	}
+
+	return t.service.AddNotification(ctx, service.AddNotificationParams{
+		Key:    domain.NewNotificationKey("monthly-stats", fmt.Sprint(car.ID), from.Format("2006-01")),
+		UserID: car.CreatedBy,
+		Text:   text,
+	})
 }
 
 func previousMonthPeriod(now time.Time) (time.Time, time.Time) {

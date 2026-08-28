@@ -30,9 +30,14 @@ func NewTaskRegistry(logger *slog.Logger, cfg config.BotTasksConfig, service ser
 }
 
 func (r *TaskRegistry) Register(botAPI *telegram.Bot) error {
+	t := task.NewNotificationSenderTask(r.logger, botAPI, r.service, r.cfg.NotificationSender.MaxAttempts)
+	if err := r.scheduler.Schedule("notification-sender", r.cfg.NotificationSender.Schedule, t); err != nil {
+		return fmt.Errorf("unable to schedule notification-sender task: %w", err)
+	}
+
 	if r.cfg.MonthlyStats.Enabled {
-		task := task.NewMonthlyStatsTask(r.logger, botAPI, r.service)
-		if err := r.scheduler.Schedule("monthly-stats", r.cfg.MonthlyStats.Schedule, task); err != nil {
+		t := task.NewMonthlyStatsTask(r.logger, botAPI, r.service)
+		if err := r.scheduler.Schedule("monthly-stats", r.cfg.MonthlyStats.Schedule, t); err != nil {
 			return fmt.Errorf("unable to schedule monthly-stats task: %w", err)
 		}
 	}
