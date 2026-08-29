@@ -22,10 +22,11 @@ const (
 )
 
 type Config struct {
-	Bot     BotConfig     `yaml:"bot"`
-	Storage StorageConfig `yaml:"storage"`
-	Cache   CacheConfig   `yaml:"cache"`
-	Log     LogConfig     `yaml:"log"`
+	Bot       BotConfig       `yaml:"bot"`
+	Storage   StorageConfig   `yaml:"storage"`
+	Cache     CacheConfig     `yaml:"cache"`
+	Scheduler SchedulerConfig `yaml:"scheduler"`
+	Log       LogConfig       `yaml:"log"`
 }
 
 type BotConfig struct {
@@ -54,6 +55,15 @@ type NotificationSenderTaskConfig struct {
 type MonthlyStatsTaskConfig struct {
 	Enabled  bool   `yaml:"enabled" default:"true"`
 	Schedule string `yaml:"schedule" default:"1 0 1 * *"`
+}
+
+type SchedulerConfig struct {
+	RetryPolicy SchedulerTaskRetryConfig `yaml:"retryPolicy"`
+}
+
+type SchedulerTaskRetryConfig struct {
+	MaxAttempts uint32        `yaml:"maxAttempts" default:"1"`
+	Delay       time.Duration `yaml:"delay" default:"5m"`
 }
 
 type StorageConfig struct {

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/util/pointerutils"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/util"
 )
 
 type listCommandArgs struct {
@@ -22,7 +22,7 @@ func parseListCommandArgs(cmdArgs string) (*listCommandArgs, error) {
 	var regNumber *domain.RegNumber
 	if len(args) > 0 {
 		if value, err := domain.ParseRegNumber(args[0]); err == nil {
-			regNumber = pointerutils.AsPointer(value)
+			regNumber = util.AsPointer(value)
 			args = args[1:]
 		}
 	}

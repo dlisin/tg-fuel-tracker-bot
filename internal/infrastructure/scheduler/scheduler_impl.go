@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/config"
 	"github.com/go-co-op/gocron/v2"
 )
 
 type SchedulerImpl struct {
 	logger    *slog.Logger
+	cfg       config.SchedulerConfig
 	scheduler gocron.Scheduler
 }
 
-func New(logger *slog.Logger) (*SchedulerImpl, error) {
+func New(logger *slog.Logger, cfg config.SchedulerConfig) (*SchedulerImpl, error) {
 	logger = logger.With(
 		slog.String("component", "Scheduler"),
 	)
@@ -31,6 +33,7 @@ func New(logger *slog.Logger) (*SchedulerImpl, error) {
 
 	scheduler := &SchedulerImpl{
 		logger:    logger,
+		cfg:       cfg,
 		scheduler: cronScheduler,
 	}
 
@@ -46,18 +49,18 @@ func (s *SchedulerImpl) Schedule(taskName string, taskCronExpression string, sch
 
 	logger.Info("operation started")
 
-	_, err := s.scheduler.NewJob(
-		gocron.CronJob(taskCronExpression, false),
-		gocron.NewTask(func(ctx context.Context) error {
-			return s.runTask(ctx, taskName, scheduledTask)
-		}),
-		gocron.WithName(taskName),
-	)
+	runner := newTaskRunner(logger, s.cfg.RetryPolicy, func(ctx context.Context) error {
+		return s.runTask(ctx, taskName, scheduledTask)
+	})
+
+	job, err := s.scheduler.NewJob(gocron.CronJob(taskCronExpression, false), gocron.NewTask(runner.Run), gocron.WithName(taskName))
 	if err != nil {
 		err = fmt.Errorf("unable to schedule task %q: %w", taskName, err)
 		logger.Error("operation failed", slog.Any("error", err))
 		return err
 	}
+
+	runner.setJob(job)
 
 	logger.Info("operation completed")
 	return nil

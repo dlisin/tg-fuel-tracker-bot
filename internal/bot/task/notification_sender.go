@@ -2,6 +2,8 @@ package task
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
@@ -41,6 +43,8 @@ func (t *NotificationSenderTask) Run(ctx context.Context) error {
 		return err
 	}
 
+	var taskErrors []error
+
 	for _, notification := range notifications {
 		if err := t.processNotification(ctx, notification); err != nil {
 			logger.ErrorContext(ctx, "unable to process notification",
@@ -48,7 +52,18 @@ func (t *NotificationSenderTask) Run(ctx context.Context) error {
 				slog.Uint64("userId", uint64(notification.UserID)),
 				slog.Any("error", err),
 			)
+
+			taskErrors = append(taskErrors, fmt.Errorf("unable to process notification %s: %w", notification.Key, err))
 		}
+	}
+
+	if err := errors.Join(taskErrors...); err != nil {
+		logger.ErrorContext(ctx, "operation failed",
+			slog.Int("notificationsCount", len(notifications)),
+			slog.Int("errorsCount", len(taskErrors)),
+			slog.Any("error", err),
+		)
+		return err
 	}
 
 	logger.InfoContext(ctx, "operation completed", slog.Int("notificationsCount", len(notifications)))
