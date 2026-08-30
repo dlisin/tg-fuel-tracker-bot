@@ -32,12 +32,28 @@ type GetRefuelsForPeriodParams struct {
 	To   time.Time
 }
 
+type AddNotificationParams struct {
+	Key    domain.NotificationKey
+	UserID domain.TelegramID
+	Text   string
+}
+
+type UpdateNotificationStatusParams struct {
+	Key    domain.NotificationKey
+	UserID domain.TelegramID
+	Status domain.NotificationStatus
+}
+
 type BotService interface {
+	// Cars
+
 	AddCar(ctx context.Context, userID domain.TelegramID, params AddCarParams) (*domain.Car, error)
 
 	GetUserCars(ctx context.Context, userID domain.TelegramID) ([]domain.Car, error)
 
 	GetAllCars(ctx context.Context) ([]domain.Car, error)
+
+	// Refuels
 
 	AddRefuel(ctx context.Context, userID domain.TelegramID, params AddRefuelParams) (*domain.Refuel, error)
 
@@ -48,4 +64,11 @@ type BotService interface {
 	GetRefuelStatsForPeriod(ctx context.Context, userID domain.TelegramID, params GetRefuelsForPeriodParams) (*RefuelStats, error)
 
 	GetLatestRefuelStats(ctx context.Context, userID domain.TelegramID, regNumber domain.RegNumber) (*RefuelStats, error)
+
+	// Notifications
+	AddNotification(ctx context.Context, params AddNotificationParams) error
+
+	GetPendingNotifications(ctx context.Context) ([]domain.Notification, error)
+
+	UpdateNotificationStatus(ctx context.Context, params UpdateNotificationStatusParams) error
 }

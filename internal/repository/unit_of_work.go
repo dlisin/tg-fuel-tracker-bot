@@ -16,6 +16,7 @@ type Transaction interface {
 	UserCarInviteRepository() UserCarInviteRepository
 	UserCarRepository() UserCarRepository
 	RefuelRepository() RefuelRepository
+	NotificationRepository() NotificationRepository
 }
 
 func WithTransaction(ctx context.Context, uow UnitOfWork, fn func(tx Transaction) error) error {

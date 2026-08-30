@@ -361,6 +361,118 @@ func (s *botServiceImpl) GetLatestRefuelStats(ctx context.Context, userID domain
 	return stats, nil
 }
 
+func (s *botServiceImpl) AddNotification(ctx context.Context, params AddNotificationParams) error {
+	logger := s.logger.With(
+		slog.String("operation", "AddNotification"),
+		slog.String("key", params.Key.String()),
+		slog.Uint64("userId", uint64(params.UserID)),
+	)
+
+	logger.InfoContext(ctx, "operation started")
+
+	now := time.Now()
+	notification := &domain.Notification{
+		Key:       params.Key,
+		UserID:    params.UserID,
+		Text:      params.Text,
+		Status:    domain.NotificationStatusPending,
+		Attempts:  0,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	err := repository.WithTransaction(ctx, s.uow, func(tx repository.Transaction) error {
+		return tx.NotificationRepository().Create(ctx, notification)
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrEntityAlreadyExists) {
+			logger.DebugContext(ctx, "notification already exists, skipping")
+			logger.InfoContext(ctx, "operation completed")
+			return nil
+		}
+		return handleServiceError(logger, ctx, err)
+	}
+
+	logger.InfoContext(ctx, "operation completed")
+	return nil
+}
+
+func (s *botServiceImpl) GetPendingNotifications(ctx context.Context) ([]domain.Notification, error) {
+	logger := s.logger.With(
+		slog.String("operation", "GetPendingNotifications"),
+	)
+
+	logger.InfoContext(ctx, "operation started")
+
+	var notifications []domain.Notification
+	err := repository.WithTransaction(ctx, s.uow, func(tx repository.Transaction) error {
+		var err error
+		notifications, err = tx.NotificationRepository().List(ctx, repository.NotificationListParams{
+			Status: domain.NotificationStatusPending,
+			Order:  repository.SortOrderAsc,
+		})
+
+		return err
+	})
+	if err != nil {
+		return nil, handleServiceError(logger, ctx, err)
+	}
+
+	logger.InfoContext(ctx, "operation completed", slog.Int("count", len(notifications)))
+	return notifications, nil
+}
+
+func (s *botServiceImpl) UpdateNotificationStatus(ctx context.Context, params UpdateNotificationStatusParams) error {
+	logger := s.logger.With(
+		slog.String("operation", "UpdateNotificationStatus"),
+		slog.String("key", params.Key.String()),
+		slog.Uint64("userId", uint64(params.UserID)),
+		slog.String("status", string(params.Status)),
+	)
+
+	logger.InfoContext(ctx, "operation started")
+
+	err := repository.WithTransaction(ctx, s.uow, func(tx repository.Transaction) error {
+		notification, err := tx.NotificationRepository().Get(ctx, params.Key, params.UserID)
+		if err != nil {
+			return err
+		}
+
+		logger.DebugContext(ctx, "notification found",
+			slog.Uint64("id", uint64(notification.ID)),
+			slog.String("currentStatus", string(notification.Status)),
+		)
+
+		if notification.Status != domain.NotificationStatusPending {
+			logger.DebugContext(ctx, "notification status transition skipped",
+				slog.String("currentStatus", string(notification.Status)),
+				slog.String("targetStatus", string(params.Status)),
+			)
+			return nil
+		}
+
+		notification.Status = params.Status
+		notification.Attempts++
+		notification.UpdatedAt = time.Now()
+
+		if err := tx.NotificationRepository().Update(ctx, notification); err != nil {
+			return err
+		}
+
+		logger.DebugContext(ctx, "notification status updated",
+			slog.String("status", string(notification.Status)),
+			slog.Uint64("attempts", uint64(notification.Attempts)),
+		)
+		return nil
+	})
+	if err != nil {
+		return handleServiceError(logger, ctx, err)
+	}
+
+	logger.InfoContext(ctx, "operation completed")
+	return nil
+}
+
 func (s *botServiceImpl) listRefuels(logger *slog.Logger, ctx context.Context, userID domain.TelegramID, regNumber domain.RegNumber, params repository.RefuelListParams) ([]domain.Refuel, error) {
 	var refuels []domain.Refuel
 	err := repository.WithTransaction(ctx, s.uow, func(tx repository.Transaction) error {

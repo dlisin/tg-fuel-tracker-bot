@@ -5,8 +5,7 @@ import (
 	"strings"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/util/pointerutils"
-	"github.com/dlisin/tg-fuel-tracker-bot/internal/util/stringutils"
+	"github.com/dlisin/tg-fuel-tracker-bot/internal/util"
 )
 
 type refuelDeleteCommandArgs struct {
@@ -20,7 +19,7 @@ func parseRefuelDeleteCommandArgs(cmdArgs string) (*refuelDeleteCommandArgs, err
 	var regNumber *domain.RegNumber
 	if len(args) > 0 {
 		if value, err := domain.ParseRegNumber(args[0]); err == nil {
-			regNumber = pointerutils.AsPointer(value)
+			regNumber = util.AsPointer(value)
 			args = args[1:]
 		}
 	}
@@ -29,7 +28,7 @@ func parseRefuelDeleteCommandArgs(cmdArgs string) (*refuelDeleteCommandArgs, err
 		return nil, fmt.Errorf("укажите [<госномер>] <пробег>")
 	}
 
-	odometer, err := stringutils.ParseInt64(args[0])
+	odometer, err := util.ParseInt64(args[0])
 	if err != nil || odometer <= 0 {
 		return nil, fmt.Errorf("<пробег> должен быть целым числом > 0")
 	}

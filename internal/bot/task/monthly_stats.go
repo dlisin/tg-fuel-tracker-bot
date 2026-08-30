@@ -43,6 +43,8 @@ func (t *MonthlyStatsTask) Run(ctx context.Context) error {
 		return err
 	}
 
+	var taskErrors []error
+
 	for _, car := range cars {
 		if err := t.processCar(ctx, car, from, to); err != nil {
 			logger.ErrorContext(ctx, "unable to process car",
@@ -50,7 +52,18 @@ func (t *MonthlyStatsTask) Run(ctx context.Context) error {
 				slog.String("regNumber", car.RegNumber.String()),
 				slog.Any("error", err),
 			)
+
+			taskErrors = append(taskErrors, fmt.Errorf("unable to process car %d: %w", car.ID, err))
 		}
+	}
+
+	if err := errors.Join(taskErrors...); err != nil {
+		logger.ErrorContext(ctx, "operation failed",
+			slog.Int("carsCount", len(cars)),
+			slog.Int("errorsCount", len(taskErrors)),
+			slog.Any("error", err),
+		)
+		return err
 	}
 
 	logger.InfoContext(ctx, "operation completed", slog.Int("carsCount", len(cars)))
@@ -72,10 +85,20 @@ func (t *MonthlyStatsTask) processCar(ctx context.Context, car domain.Car, from 
 		return err
 	}
 
-	return t.sendMessageFromTemplate(ctx, int64(car.CreatedBy), "task/monthly_stats.jet", jet.VarMap{}.
+	text, err := t.renderTemplate("task/monthly_stats.jet", jet.VarMap{}.
 		Set("Label", getLabel(from)).
 		Set("Car", car).
-		Set("Stats", stats))
+		Set("Stats", stats),
+	)
+	if err != nil {
+		return err
+	}
+
+	return t.service.AddNotification(ctx, service.AddNotificationParams{
+		Key:    domain.NewNotificationKey("monthly-stats", fmt.Sprint(car.ID), from.Format("2006-01")),
+		UserID: car.CreatedBy,
+		Text:   text,
+	})
 }
 
 func previousMonthPeriod(now time.Time) (time.Time, time.Time) {

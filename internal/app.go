@@ -39,7 +39,7 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("unable to create storage: %w", err)
 	}
 
-	appScheduler, err := scheduler.New(appLogger)
+	appScheduler, err := scheduler.New(appLogger, cfg.Scheduler)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create scheduler: %w", err)
 	}
