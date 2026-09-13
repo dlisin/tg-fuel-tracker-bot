@@ -214,6 +214,10 @@ func (s *botServiceImpl) DeleteRefuel(ctx context.Context, userID domain.Telegra
 		}
 		logger.DebugContext(ctx, "refuel found", slog.Int64("refuelId", refuel.ID))
 
+		if car.CreatedBy != userID && refuel.CreatedBy != userID {
+			return ErrRefuelAccessDenied
+		}
+
 		if err := tx.RefuelRepository().Delete(ctx, refuel); err != nil {
 			if errors.Is(err, repository.ErrEntityNotFound) {
 				return ErrRefuelNotFound

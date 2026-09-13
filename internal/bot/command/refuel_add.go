@@ -54,5 +54,13 @@ func (h *RefuelAddCommand) Process(ctx context.Context, msg *models.Message) err
 	variables.Set("Refuel", refuel)
 	variables.Set("Stats", stats)
 
-	return h.sendMessageFromTemplate(ctx, msg.Chat.ID, "command/refuel_add.jet", variables)
+	if err := h.sendMessageFromTemplate(ctx, msg.Chat.ID, "command/refuel_add.jet", variables); err != nil {
+		return err
+	}
+
+	if userID != car.CreatedBy {
+		return h.sendMessageFromTemplate(ctx, int64(car.CreatedBy), "command/refuel_add.jet", variables)
+	}
+
+	return nil
 }
