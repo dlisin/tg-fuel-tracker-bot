@@ -12,8 +12,9 @@ var (
 	ErrCarAlreadyExists = &ServiceError{err: errors.New("car with the specified registration number already exists")}
 
 	// Refuel
-	ErrRefuelNotFound       = &ServiceError{err: errors.New("refuel with provided odometer value not found")}
-	ErrRefuelOdometerTooLow = &ServiceError{err: errors.New("refuel odometer value must be greater than current car odometer value")}
+	ErrRefuelNotFound        = &ServiceError{err: errors.New("refuel with provided odometer value not found")}
+	ErrRefuelAccessDenied     = &ServiceError{err: errors.New("user is not allowed to delete this refuel")}
+	ErrRefuelOdometerTooLow   = &ServiceError{err: errors.New("refuel odometer value must be greater than current car odometer value")}
 
 	// RefuelStats
 	ErrStatsNotEnoughRefuels = &ServiceError{err: errors.New("not enough refuels to calculate statistics")}

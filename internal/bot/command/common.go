@@ -80,6 +80,9 @@ func (h *commonCommand) handleServiceError(err error) error {
 	case errors.Is(err, service.ErrRefuelNotFound):
 		return errors.New("⚠️ Заправка не найдена")
 
+	case errors.Is(err, service.ErrRefuelAccessDenied):
+		return errors.New("⚠️ Вы не можете редактировать данную заправку")
+
 	case errors.Is(err, service.ErrRefuelOdometerTooLow):
 		return errors.New("⚠️ Пробег должен быть больше текущего пробега автомобиля")
 
