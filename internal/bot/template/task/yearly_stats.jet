@@ -9,10 +9,8 @@
 💳 Всего на топливо ушло *{{ formatYearMoney(Stats.TotalCost) }}* — каждый километр обошёлся примерно в *{{ formatYearPrice(Stats.CostPerKm) }}*.
 
 💰 В начале года литр топлива стоил *{{ formatYearPrice(Stats.PriceChange.From) }}*, а к концу — уже *{{ formatYearPrice(Stats.PriceChange.To) }}*.
-{{- if Stats.PriceChange.DeltaPercent > 0 }}
-За год цена выросла на *{{ formatYearPercent(Stats.PriceChange.DeltaPercent) }}*.
-{{- else if Stats.PriceChange.DeltaPercent < 0 }}
-За год цена снизилась на *{{ formatYearPercent(0 - Stats.PriceChange.DeltaPercent) }}*.
+{{- if PriceChanged }}
+За год цена {{ PriceChangeDirection }} на *{{ formatYearPercent(PriceChangePercent) }}*.
 {{- else }}
 За год цена не изменилась.
 {{- end }}
