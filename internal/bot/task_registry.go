@@ -11,6 +11,8 @@ import (
 	telegram "github.com/go-telegram/bot"
 )
 
+const yearlyStatsNotificationSenderSchedule = "*/5 23 31 12 *"
+
 type TaskRegistry struct {
 	logger    *slog.Logger
 	cfg       config.BotTasksConfig
@@ -30,8 +32,8 @@ func NewTaskRegistry(logger *slog.Logger, cfg config.BotTasksConfig, service ser
 }
 
 func (r *TaskRegistry) Register(botAPI *telegram.Bot) error {
-	t := task.NewNotificationSenderTask(r.logger, botAPI, r.service, r.cfg.NotificationSender.MaxAttempts)
-	if err := r.scheduler.Schedule("notification-sender", r.cfg.NotificationSender.Schedule, t); err != nil {
+	notificationSenderTask := task.NewNotificationSenderTask(r.logger, botAPI, r.service, r.cfg.NotificationSender.MaxAttempts)
+	if err := r.scheduler.Schedule("notification-sender", r.cfg.NotificationSender.Schedule, notificationSenderTask); err != nil {
 		return fmt.Errorf("unable to schedule notification-sender task: %w", err)
 	}
 
@@ -46,6 +48,10 @@ func (r *TaskRegistry) Register(botAPI *telegram.Bot) error {
 		t := task.NewYearlyStatsTask(r.logger, botAPI, r.service)
 		if err := r.scheduler.Schedule("yearly-stats", r.cfg.YearlyStats.Schedule, t); err != nil {
 			return fmt.Errorf("unable to schedule yearly-stats task: %w", err)
+		}
+
+		if err := r.scheduler.Schedule("yearly-stats-notification-sender", yearlyStatsNotificationSenderSchedule, notificationSenderTask); err != nil {
+			return fmt.Errorf("unable to schedule yearly-stats-notification-sender task: %w", err)
 		}
 	}
 
