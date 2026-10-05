@@ -63,6 +63,8 @@ type BotService interface {
 
 	GetRefuelStatsForPeriod(ctx context.Context, userID domain.TelegramID, params GetRefuelsForPeriodParams) (*RefuelStats, error)
 
+	GetYearStatsForPeriod(ctx context.Context, userID domain.TelegramID, params GetRefuelsForPeriodParams) (*YearStats, error)
+
 	GetLatestRefuelStats(ctx context.Context, userID domain.TelegramID, regNumber domain.RegNumber) (*RefuelStats, error)
 
 	// Notifications
