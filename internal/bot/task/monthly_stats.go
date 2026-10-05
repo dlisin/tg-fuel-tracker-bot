@@ -15,9 +15,10 @@ import (
 
 type MonthlyStatsTask struct {
 	commonTask
+	yearlyStatsEnabled bool
 }
 
-func NewMonthlyStatsTask(logger *slog.Logger, botAPI *telegram.Bot, service service.BotService) *MonthlyStatsTask {
+func NewMonthlyStatsTask(logger *slog.Logger, botAPI *telegram.Bot, service service.BotService, yearlyStatsEnabled bool) *MonthlyStatsTask {
 	return &MonthlyStatsTask{
 		commonTask: commonTask{
 			logger: logger.With(
@@ -26,6 +27,7 @@ func NewMonthlyStatsTask(logger *slog.Logger, botAPI *telegram.Bot, service serv
 			botAPI:  botAPI,
 			service: service,
 		},
+		yearlyStatsEnabled: yearlyStatsEnabled,
 	}
 }
 
@@ -36,7 +38,13 @@ func (t *MonthlyStatsTask) Run(ctx context.Context) error {
 
 	logger.InfoContext(ctx, "operation started")
 
-	from, to := previousMonthPeriod(time.Now())
+	now := time.Now()
+	if shouldSkipMonthlyStats(now, t.yearlyStatsEnabled) {
+		logger.InfoContext(ctx, "operation completed", slog.String("reason", "yearly stats replace December monthly stats"))
+		return nil
+	}
+
+	from, to := previousMonthPeriod(now)
 	cars, err := t.service.GetAllCars(ctx)
 	if err != nil {
 		logger.ErrorContext(ctx, "operation failed", slog.Any("error", err))
@@ -107,21 +115,29 @@ func previousMonthPeriod(now time.Time) (time.Time, time.Time) {
 	return currentMonth.AddDate(0, -1, 0), currentMonth.Add(-time.Nanosecond)
 }
 
+func shouldSkipMonthlyStats(now time.Time, yearlyStatsEnabled bool) bool {
+	return yearlyStatsEnabled && now.Month() == time.January
+}
+
 func getLabel(date time.Time) string {
+	return fmt.Sprintf("за %s %d", getMonthName(date.Month()), date.Year())
+}
+
+func getMonthName(month time.Month) string {
 	months := [...]string{
-		"Январь",
-		"Февраль",
-		"Март",
-		"Апрель",
-		"Май",
-		"Июнь",
-		"Июль",
-		"Август",
-		"Сентябрь",
-		"Октябрь",
-		"Ноябрь",
-		"Декабрь",
+		"январь",
+		"февраль",
+		"март",
+		"апрель",
+		"май",
+		"июнь",
+		"июль",
+		"август",
+		"сентябрь",
+		"октябрь",
+		"ноябрь",
+		"декабрь",
 	}
 
-	return fmt.Sprintf("за %s %d", months[date.Month()-1], date.Year())
+	return months[month-1]
 }
