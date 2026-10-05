@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"reflect"
+	"strings"
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/CloudyKit/jet/v6/loaders/embedfs"
@@ -54,5 +56,90 @@ func newTemplateSet() *jet.Set {
 		return fmt.Sprintf("%.2fл", value)
 	})
 
+	set.AddGlobal("formatYearMoney", func(value any) string {
+		return formatNumber(value, 0) + " ₽"
+	})
+
+	set.AddGlobal("formatYearPrice", func(value any) string {
+		return formatNumber(value, 2) + " ₽"
+	})
+
+	set.AddGlobal("formatYearPercent", func(value any) string {
+		return formatNumber(value, 1) + "%"
+	})
+
+	set.AddGlobal("formatYearDistance", func(value any) string {
+		return formatNumber(value, 0) + " км"
+	})
+
+	set.AddGlobal("formatYearLiters", func(value any) string {
+		return formatNumber(value, 1) + " л"
+	})
+
+	set.AddGlobal("formatYearDays", func(value any) string {
+		return formatNumber(value, 0)
+	})
+
 	return set
+}
+
+func formatNumber(value any, precision int) string {
+	number, ok := numericValue(value)
+	if !ok {
+		return fmt.Sprint(value)
+	}
+
+	parts := strings.SplitN(fmt.Sprintf("%.*f", precision, number), ".", 2)
+	integer := groupDigits(parts[0])
+	if precision == 0 {
+		return integer
+	}
+
+	return integer + "," + parts[1]
+}
+
+func numericValue(value any) (float64, bool) {
+	if value == nil {
+		return 0, false
+	}
+
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return float64(v.Int()), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return float64(v.Uint()), true
+	case reflect.Float32, reflect.Float64:
+		return v.Float(), true
+	default:
+		return 0, false
+	}
+}
+
+func groupDigits(value string) string {
+	sign := ""
+	if strings.HasPrefix(value, "-") {
+		sign = "-"
+		value = strings.TrimPrefix(value, "-")
+	}
+
+	if len(value) <= 3 {
+		return sign + value
+	}
+
+	firstGroupLength := len(value) % 3
+	if firstGroupLength == 0 {
+		firstGroupLength = 3
+	}
+
+	var result strings.Builder
+	result.WriteString(sign)
+	result.WriteString(value[:firstGroupLength])
+
+	for i := firstGroupLength; i < len(value); i += 3 {
+		result.WriteByte(' ')
+		result.WriteString(value[i : i+3])
+	}
+
+	return result.String()
 }
