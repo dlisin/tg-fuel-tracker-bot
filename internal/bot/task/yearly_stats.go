@@ -109,7 +109,12 @@ func (t *YearlyStatsTask) processCar(ctx context.Context, car domain.Car, from t
 }
 
 func currentYearPeriod(now time.Time) (time.Time, time.Time) {
-	from := time.Date(now.Year(), time.January, 1, 0, 0, 0, 0, now.Location())
+	year := now.Year()
+	if now.Month() == time.January {
+		year--
+	}
+
+	from := time.Date(year, time.January, 1, 0, 0, 0, 0, now.Location())
 	return from, from.AddDate(1, 0, 0).Add(-time.Nanosecond)
 }
 
