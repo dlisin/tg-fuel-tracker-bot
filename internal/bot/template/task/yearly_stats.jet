@@ -4,7 +4,7 @@
 
 🚗 За этот год на автомобиле *{{ Car.RegNumber }}* вы проехали *{{ formatYearDistance(Stats.TotalDistance) }}* — неплохое путешествие получилось.
 
-⛽ Заезжали на заправку *{{ Stats.Entries }} раза* — примерно раз в *{{ formatYearDays(Stats.RefuelIntervalDays) }} дней*, чаще всего по *{{ FavoriteWeekday }}*.
+⛽ Заезжали на заправку *{{ formatYearRefuelCount(Stats.Entries) }}* — примерно раз в *{{ formatYearIntervalDays(Stats.RefuelIntervalDays) }}*, чаще всего по *{{ FavoriteWeekday }}*.
 
 💳 Всего на топливо ушло *{{ formatYearMoney(Stats.TotalCost) }}* — каждый километр обошёлся примерно в *{{ formatYearPrice(Stats.CostPerKm) }}*.
 
