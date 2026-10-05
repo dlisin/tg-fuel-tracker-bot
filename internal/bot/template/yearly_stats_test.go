@@ -49,6 +49,8 @@ func TestRenderYearlyStats(t *testing.T) {
 
 	assert.Contains(t, text, "До 2027 года остались считанные часы")
 	assert.Contains(t, text, "18 742 км")
+	assert.Contains(t, text, "42 раза")
+	assert.Contains(t, text, "9 дней")
 	assert.Contains(t, text, "104 320 ₽")
 	assert.Contains(t, text, "5,57 ₽")
 	assert.Contains(t, text, "58,40 ₽")
