@@ -26,10 +26,22 @@ func TestShouldSkipMonthlyStats(t *testing.T) {
 
 func TestCurrentYearPeriod(t *testing.T) {
 	location := time.FixedZone("MSK", 3*60*60)
-	now := time.Date(2026, time.December, 31, 23, 0, 0, 0, location)
 
-	from, to := currentYearPeriod(now)
+	t.Run("December 31", func(t *testing.T) {
+		now := time.Date(2026, time.December, 31, 23, 0, 0, 0, location)
 
-	assert.Equal(t, time.Date(2026, time.January, 1, 0, 0, 0, 0, location), from)
-	assert.Equal(t, time.Date(2026, time.December, 31, 23, 59, 59, 999999999, location), to)
+		from, to := currentYearPeriod(now)
+
+		assert.Equal(t, time.Date(2026, time.January, 1, 0, 0, 0, 0, location), from)
+		assert.Equal(t, time.Date(2026, time.December, 31, 23, 59, 59, 999999999, location), to)
+	})
+
+	t.Run("January retry", func(t *testing.T) {
+		now := time.Date(2027, time.January, 1, 0, 5, 0, 0, location)
+
+		from, to := currentYearPeriod(now)
+
+		assert.Equal(t, time.Date(2026, time.January, 1, 0, 0, 0, 0, location), from)
+		assert.Equal(t, time.Date(2026, time.December, 31, 23, 59, 59, 999999999, location), to)
+	})
 }
