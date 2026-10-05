@@ -36,9 +36,16 @@ func (r *TaskRegistry) Register(botAPI *telegram.Bot) error {
 	}
 
 	if r.cfg.MonthlyStats.Enabled {
-		t := task.NewMonthlyStatsTask(r.logger, botAPI, r.service)
+		t := task.NewMonthlyStatsTask(r.logger, botAPI, r.service, r.cfg.YearlyStats.Enabled)
 		if err := r.scheduler.Schedule("monthly-stats", r.cfg.MonthlyStats.Schedule, t); err != nil {
 			return fmt.Errorf("unable to schedule monthly-stats task: %w", err)
+		}
+	}
+
+	if r.cfg.YearlyStats.Enabled {
+		t := task.NewYearlyStatsTask(r.logger, botAPI, r.service)
+		if err := r.scheduler.Schedule("yearly-stats", r.cfg.YearlyStats.Schedule, t); err != nil {
+			return fmt.Errorf("unable to schedule yearly-stats task: %w", err)
 		}
 	}
 
