@@ -50,7 +50,14 @@ func (r *TaskRegistry) Register(botAPI *telegram.Bot) error {
 			return fmt.Errorf("unable to schedule yearly-stats task: %w", err)
 		}
 
-		if err := r.scheduler.Schedule("yearly-stats-notification-sender", yearlyStatsNotificationSenderSchedule, notificationSenderTask); err != nil {
+		yearlyStatsNotificationSenderTask := task.NewNotificationSenderTaskWithKeyPrefix(
+			r.logger,
+			botAPI,
+			r.service,
+			r.cfg.NotificationSender.MaxAttempts,
+			"yearly-stats",
+		)
+		if err := r.scheduler.Schedule("yearly-stats-notification-sender", yearlyStatsNotificationSenderSchedule, yearlyStatsNotificationSenderTask); err != nil {
 			return fmt.Errorf("unable to schedule yearly-stats-notification-sender task: %w", err)
 		}
 	}
