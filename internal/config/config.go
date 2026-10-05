@@ -45,16 +45,22 @@ type BotPreferencesConfig struct {
 type BotTasksConfig struct {
 	NotificationSender NotificationSenderTaskConfig `yaml:"notificationSender"`
 	MonthlyStats       MonthlyStatsTaskConfig       `yaml:"monthlyStats"`
+	YearlyStats        YearlyStatsTaskConfig        `yaml:"yearlyStats"`
 }
 
 type NotificationSenderTaskConfig struct {
-	Schedule    string `yaml:"schedule" default:"*/5 8-20 * * *"`
+	Schedule    string `yaml:"schedule" default:"*/5 8-23 * * *"`
 	MaxAttempts uint32 `yaml:"maxAttempts" default:"1"`
 }
 
 type MonthlyStatsTaskConfig struct {
 	Enabled  bool   `yaml:"enabled" default:"true"`
 	Schedule string `yaml:"schedule" default:"1 0 1 * *"`
+}
+
+type YearlyStatsTaskConfig struct {
+	Enabled  bool   `yaml:"enabled" default:"true"`
+	Schedule string `yaml:"schedule" default:"0 23 31 12 *"`
 }
 
 type SchedulerConfig struct {
