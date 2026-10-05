@@ -120,7 +120,22 @@ func shouldSkipMonthlyStats(now time.Time, yearlyStatsEnabled bool) bool {
 }
 
 func getLabel(date time.Time) string {
-	return fmt.Sprintf("за %s %d", getMonthName(date.Month()), date.Year())
+	months := [...]string{
+		"Январь",
+		"Февраль",
+		"Март",
+		"Апрель",
+		"Май",
+		"Июнь",
+		"Июль",
+		"Август",
+		"Сентябрь",
+		"Октябрь",
+		"Ноябрь",
+		"Декабрь",
+	}
+
+	return fmt.Sprintf("за %s %d", months[date.Month()-1], date.Year())
 }
 
 func getMonthName(month time.Month) string {
