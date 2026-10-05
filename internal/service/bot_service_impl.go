@@ -325,6 +325,48 @@ func (s *botServiceImpl) GetRefuelStatsForPeriod(ctx context.Context, userID dom
 	return stats, nil
 }
 
+func (s *botServiceImpl) GetYearStatsForPeriod(ctx context.Context, userID domain.TelegramID, params GetRefuelsForPeriodParams) (*YearStats, error) {
+	logger := s.logger.With(
+		slog.String("operation", "GetYearStatsForPeriod"),
+		slog.Uint64("userId", uint64(userID)),
+		slog.String("regNumber", params.RegNumber.String()),
+		slog.Time("from", params.From),
+		slog.Time("to", params.To),
+	)
+
+	logger.InfoContext(ctx, "operation started")
+
+	var stats *YearStats
+	err := func() error {
+		refuels, err := s.listRefuels(logger, ctx, userID, params.RegNumber, repository.RefuelListParams{
+			From: params.From,
+			To:   params.To,
+		})
+		if err != nil {
+			return err
+		}
+
+		stats, err = CalculateYearStats(refuels)
+		if err != nil {
+			return err
+		}
+
+		logger.DebugContext(ctx, "year stats calculated",
+			slog.Int("entries", stats.Entries),
+			slog.Uint64("totalDistance", uint64(stats.TotalDistance)),
+			slog.Float64("totalCost", stats.TotalCost),
+		)
+
+		return nil
+	}()
+	if err != nil {
+		return nil, handleServiceError(logger, ctx, err)
+	}
+
+	logger.InfoContext(ctx, "operation completed", slog.Int("entries", stats.Entries))
+	return stats, nil
+}
+
 func (s *botServiceImpl) GetLatestRefuelStats(ctx context.Context, userID domain.TelegramID, regNumber domain.RegNumber) (*RefuelStats, error) {
 	logger := s.logger.With(
 		slog.String("operation", "GetLatestRefuelStats"),
