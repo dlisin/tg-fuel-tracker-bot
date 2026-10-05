@@ -49,7 +49,7 @@ type BotTasksConfig struct {
 }
 
 type NotificationSenderTaskConfig struct {
-	Schedule    string `yaml:"schedule" default:"*/5 8-23 * * *"`
+	Schedule    string `yaml:"schedule" default:"*/5 8-20 * * *"`
 	MaxAttempts uint32 `yaml:"maxAttempts" default:"1"`
 }
 
