@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/domain"
 	"github.com/dlisin/tg-fuel-tracker-bot/internal/service"
@@ -15,9 +16,18 @@ import (
 type NotificationSenderTask struct {
 	commonTask
 	maxAttempts uint32
+	keyPrefix   string
 }
 
 func NewNotificationSenderTask(logger *slog.Logger, botAPI *telegram.Bot, service service.BotService, maxAttempts uint32) *NotificationSenderTask {
+	return newNotificationSenderTask(logger, botAPI, service, maxAttempts, "")
+}
+
+func NewNotificationSenderTaskWithKeyPrefix(logger *slog.Logger, botAPI *telegram.Bot, service service.BotService, maxAttempts uint32, keyPrefix string) *NotificationSenderTask {
+	return newNotificationSenderTask(logger, botAPI, service, maxAttempts, keyPrefix)
+}
+
+func newNotificationSenderTask(logger *slog.Logger, botAPI *telegram.Bot, service service.BotService, maxAttempts uint32, keyPrefix string) *NotificationSenderTask {
 	return &NotificationSenderTask{
 		commonTask: commonTask{
 			logger: logger.With(
@@ -27,6 +37,7 @@ func NewNotificationSenderTask(logger *slog.Logger, botAPI *telegram.Bot, servic
 			service: service,
 		},
 		maxAttempts: maxAttempts,
+		keyPrefix:   keyPrefix,
 	}
 }
 
@@ -44,8 +55,14 @@ func (t *NotificationSenderTask) Run(ctx context.Context) error {
 	}
 
 	var taskErrors []error
+	processedCount := 0
 
 	for _, notification := range notifications {
+		if !t.matchesKey(notification.Key) {
+			continue
+		}
+
+		processedCount++
 		if err := t.processNotification(ctx, notification); err != nil {
 			logger.ErrorContext(ctx, "unable to process notification",
 				slog.String("key", notification.Key.String()),
@@ -59,15 +76,24 @@ func (t *NotificationSenderTask) Run(ctx context.Context) error {
 
 	if err := errors.Join(taskErrors...); err != nil {
 		logger.ErrorContext(ctx, "operation failed",
-			slog.Int("notificationsCount", len(notifications)),
+			slog.Int("notificationsCount", processedCount),
 			slog.Int("errorsCount", len(taskErrors)),
 			slog.Any("error", err),
 		)
 		return err
 	}
 
-	logger.InfoContext(ctx, "operation completed", slog.Int("notificationsCount", len(notifications)))
+	logger.InfoContext(ctx, "operation completed", slog.Int("notificationsCount", processedCount))
 	return nil
+}
+
+func (t *NotificationSenderTask) matchesKey(key domain.NotificationKey) bool {
+	if t.keyPrefix == "" {
+		return true
+	}
+
+	value := key.String()
+	return value == t.keyPrefix || strings.HasPrefix(value, t.keyPrefix+":")
 }
 
 func (t *NotificationSenderTask) processNotification(ctx context.Context, notification domain.Notification) error {
