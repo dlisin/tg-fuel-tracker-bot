@@ -1,0 +1,27 @@
+🎄 С наступающим Новым годом! До {{ NextYear }} года остались считанные часы — самое время оглянуться назад и подвести итоги уходящего года.
+
+*Ваш {{ Year }} год в цифрах*
+
+🚗 За этот год на автомобиле *{{ Car.RegNumber }}* вы проехали *{{ formatYearDistance(Stats.TotalDistance) }}* — неплохое путешествие получилось.
+
+⛽ Заезжали на заправку *{{ Stats.Entries }} раза* — примерно раз в *{{ formatYearDays(Stats.RefuelIntervalDays) }} дней*, чаще всего по *{{ FavoriteWeekday }}*.
+
+💳 Всего на топливо ушло *{{ formatYearMoney(Stats.TotalCost) }}* — каждый километр обошёлся примерно в *{{ formatYearPrice(Stats.CostPerKm) }}*.
+
+💰 В начале года литр топлива стоил *{{ formatYearPrice(Stats.PriceChange.From) }}*, а к концу — уже *{{ formatYearPrice(Stats.PriceChange.To) }}*.
+{{- if Stats.PriceChange.DeltaPercent > 0 }}
+За год цена выросла на *{{ formatYearPercent(Stats.PriceChange.DeltaPercent) }}*.
+{{- else if Stats.PriceChange.DeltaPercent < 0 }}
+За год цена снизилась на *{{ formatYearPercent(0 - Stats.PriceChange.DeltaPercent) }}*.
+{{- else }}
+За год цена не изменилась.
+{{- end }}
+
+🏆 *Рекорды года*
+Самый большой пробег между заправками — *{{ formatYearDistance(Stats.Records.MaxDistanceBetweenRefuels) }}*
+Самая большая заправка — *{{ formatYearLiters(Stats.Records.MaxRefuelLiters) }}*, а самый большой чек — *{{ formatYearMoney(Stats.Records.MaxRefuelCost) }}*
+Больше всего километров пришлось на *{{ MostActiveMonth }} — {{ formatYearDistance(Stats.Records.MostActiveMonthDistance) }}*
+
+Оставайтесь с нами и в новом году! Желаем хороших дорог, интересных поездок и новых рекордов. 🚗
+
+Ваша команда *Fuel Tracker Bot* ❤️
