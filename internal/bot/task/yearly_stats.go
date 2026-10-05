@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"time"
 
 	"github.com/CloudyKit/jet/v6"
@@ -91,7 +92,10 @@ func (t *YearlyStatsTask) processCar(ctx context.Context, car domain.Car, from t
 		Set("Car", car).
 		Set("Stats", stats).
 		Set("FavoriteWeekday", getWeekdayLabel(stats.FavoriteWeekday)).
-		Set("MostActiveMonth", getMonthName(stats.Records.MostActiveMonth)),
+		Set("MostActiveMonth", getMonthName(stats.Records.MostActiveMonth)).
+		Set("PriceChanged", stats.PriceChange.DeltaPercent != 0).
+		Set("PriceChangeDirection", getPriceChangeDirection(stats.PriceChange.DeltaPercent)).
+		Set("PriceChangePercent", math.Abs(stats.PriceChange.DeltaPercent)),
 	)
 	if err != nil {
 		return err
@@ -121,4 +125,12 @@ func getWeekdayLabel(weekday time.Weekday) string {
 	}
 
 	return weekdays[weekday]
+}
+
+func getPriceChangeDirection(deltaPercent float64) string {
+	if deltaPercent < 0 {
+		return "снизилась"
+	}
+
+	return "выросла"
 }
