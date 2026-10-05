@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 
@@ -80,6 +81,24 @@ func newTemplateSet() *jet.Set {
 		return formatNumber(value, 0)
 	})
 
+	set.AddGlobal("formatYearRefuelCount", func(value any) string {
+		count, ok := roundedInt(value)
+		if !ok {
+			return fmt.Sprint(value)
+		}
+
+		return fmt.Sprintf("%d %s", count, russianPlural(count, "раз", "раза", "раз"))
+	})
+
+	set.AddGlobal("formatYearIntervalDays", func(value any) string {
+		days, ok := roundedInt(value)
+		if !ok {
+			return fmt.Sprint(value)
+		}
+
+		return fmt.Sprintf("%d %s", days, russianPlural(days, "день", "дня", "дней"))
+	})
+
 	return set
 }
 
@@ -142,4 +161,29 @@ func groupDigits(value string) string {
 	}
 
 	return result.String()
+}
+
+func roundedInt(value any) (int64, bool) {
+	number, ok := numericValue(value)
+	if !ok {
+		return 0, false
+	}
+
+	return int64(math.Round(number)), true
+}
+
+func russianPlural(value int64, one string, few string, many string) string {
+	value %= 100
+	if value >= 11 && value <= 14 {
+		return many
+	}
+
+	switch value % 10 {
+	case 1:
+		return one
+	case 2, 3, 4:
+		return few
+	default:
+		return many
+	}
 }
